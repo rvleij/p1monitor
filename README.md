@@ -1,5 +1,7 @@
 ## General
-This is a Docker container running P1-Monitor from https://www.ztatz.nl/p1-monitor/.
+This is a Docker container running P1-Monitor from https://www.ztatz.nl/p1-monitor/. This docker image is not supported by the original author of P1 Monitor, please don't report problems since it's not an official way to distribute P1 Monitor.
+
+The Github repo for this build, so you can build your own Docker container if you want to rather do that: https://github.com/rvleij/p1monitor
 
 P1 Monitor is intended to monitor smart meters (used in NL, maybe other countries) using a P1 cable (basically serial cable). The software monitors the telegrams sent by the meter via serial interface, interprets them and stores the data in a SQLite DB running in memory (to prevent writing to SDHC which has limited write cycles).
 From there, it's displayed in a web interface, sent via MQTT, UDP broadcasts etc etc. See the above website for more information.
