@@ -1,0 +1,10 @@
+echo init called: $0 $@ >>/tmp/init.log
+chmod a+rw /tmp/init.log
+whoami >>/tmp/init.log
+if [ x$1 = x0 -o x$1 = x6 ]
+then
+   echo Initiating shutdown >>/tmp/init.log
+   touch /var/log/p1monitor/shutdown
+else
+   echo Ignoring parameter $1 >>/tmp/init.log
+fi

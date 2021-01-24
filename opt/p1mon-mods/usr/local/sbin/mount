@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "mount called: $0 $@" >>/tmp/mount.log
+touch a+rw /tmp/mount.log
