@@ -12,7 +12,7 @@ import sys
 import os
 
 from apiutil import p1_serializer, validate_timestamp, clean_timestamp_str, list_filter_to_str, validate_timestamp_by_length
-from sqldb import SqlDb1, SqlDb2, SqlDb3, SqlDb4, rtStatusDb, financieelDb, historyWeatherDB, configDB, currentWeatherDB, temperatureDB, WatermeterDB, PhaseDB,  powerProductionDB
+from sqldb import SqlDb1, SqlDb2, SqlDb3, SqlDb4, rtStatusDb, financieelDb, historyWeatherDB, configDB, currentWeatherDB, temperatureDB, WatermeterDBV2, PhaseDB,  powerProductionDB
 
 from sys import exit
 from logger import fileLogger,logging
@@ -30,10 +30,11 @@ e_db_financieel         = financieelDb()
 weer_history_db         = historyWeatherDB()
 weer_db                 = currentWeatherDB()
 temperature_db          = temperatureDB()
-watermeter_db_uur       = WatermeterDB()
-watermeter_db_dag       = WatermeterDB()
-watermeter_db_maand     = WatermeterDB()
-watermeter_db_jaar      = WatermeterDB()
+watermeter_db           = WatermeterDBV2()
+#watermeter_db_uur       = WatermeterDB()
+#watermeter_db_dag       = WatermeterDB()
+#watermeter_db_maand     = WatermeterDB()
+#watermeter_db_jaar      = WatermeterDB()
 fase_db                 = PhaseDB()
 power_production_db     = powerProductionDB()
 
@@ -134,6 +135,7 @@ except Exception as e:
     sys.exit(1)
 flog.info( str(__name__) + ": database tabel "+const.DB_TEMPERATUUR_TAB  + " succesvol geopend." )
 
+""" new watermeter datbase in use see below
  # open van watermeter uur.
 try:    
     watermeter_db_uur.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
@@ -149,6 +151,7 @@ except Exception as e:
     sys.exit(1)
 flog.info( str(__name__) + ": database tabel " + const.DB_WATERMETER_DAG_TAB + " succesvol geopend." )
 
+
 try:    
     watermeter_db_maand.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_MAAND_TAB ,flog )
 except Exception as e:
@@ -156,14 +159,23 @@ except Exception as e:
     sys.exit(1)
 flog.info( str(__name__) + ": database tabel " + const.DB_WATERMETER_MAAND_TAB + " succesvol geopend." )
 
-try:    
+try:
     watermeter_db_jaar.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_JAAR_TAB, flog )
 except Exception as e:
     flog.critical( str(__name__) + ": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
     sys.exit(1)
 flog.info( str(__name__) + ": database tabel " + const.DB_WATERMETER_JAAR_TAB  + " succesvol geopend." )
+"""
 
-# open van fase database      
+# open van watermeter V2 database
+try:
+    watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
+except Exception as e:
+    flog.critical( str(__name__) + ": Database niet te openen(3)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
+    sys.exit(1)
+flog.info( str(__name__) + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
+
+# open van fase database
 try:
     fase_db.init( const.FILE_DB_PHASEINFORMATION ,const.DB_FASE_REALTIME_TAB )
     fase_db.defrag()
@@ -301,7 +313,7 @@ class powerProductionS0( object ):
             apiconst.JSON_API_PROD_KWH_TOTAL_H : 0,
             apiconst.JSON_API_PROD_KWH_TOTAL_L : 0,
             apiconst.JSON_API_PROD_KWH_TOTAL   : 0,
-            apiconst.JSON_API_PROD_KW_PSEUDO   : 0
+            apiconst.JSON_API_PROD_W_PSEUDO    : 0
         }
 
         if  req.path == apiconst.ROUTE_POWERPRODUCTION_S0_MIN_HELP   or \
@@ -447,7 +459,7 @@ class powerProductionS0( object ):
                         new_dict[ apiconst.JSON_API_PROD_KWH_TOTAL_H ] = a[8]
                         new_dict[ apiconst.JSON_API_PROD_KWH_TOTAL_L ] = a[9]
                         new_dict[ apiconst.JSON_API_PROD_KWH_TOTAL ]   = a[10]
-                        new_dict[ apiconst.JSON_API_PROD_KW_PSEUDO ]   = a[11]
+                        new_dict[ apiconst.JSON_API_PROD_W_PSEUDO ]    = a[11]
                         json_obj_data.append( new_dict )
 
                     resp.body = json.dumps( json_obj_data , ensure_ascii=False , sort_keys=True )
@@ -2336,18 +2348,20 @@ class Watermeter( object ):
     sqlstr_base_regular = "select \
     TIMESTAMP, \
     cast(strftime('%s', TIMESTAMP, 'utc' ) AS Integer), \
+    TIMEPERIOD_ID, \
     PULS_PER_TIMEUNIT, \
     VERBR_PER_TIMEUNIT, \
     VERBR_IN_M3_TOTAAL \
-    from "
+    from " + const.DB_WATERMETERV2_TAB
 
     sqlstr_base_round = "select \
     TIMESTAMP, \
     cast(strftime('%s', TIMESTAMP, 'utc' ) AS Integer), \
-    ROUND( PULS_PER_TIMEUNIT  ), \
-    ROUND( VERBR_PER_TIMEUNIT ), \
-    ROUND( VERBR_IN_M3_TOTAAL )\
-    from " 
+    TIMEPERIOD_ID, \
+    ROUND( PULS_PER_TIMEUNIT ), \
+    ROUND(VERBR_PER_TIMEUNIT ), \
+    ROUND( VERBR_IN_M3_TOTAAL ) \
+    from " + const.DB_WATERMETERV2_TAB 
 
     def on_get(self, req, resp):
         """Handles all GET requests."""
@@ -2357,22 +2371,25 @@ class Watermeter( object ):
         #print ( req.params )
         #print ( req.path )
 
+
         json_data  = {
             apiconst.JSON_TS_LCL                  : '',
             apiconst.JSON_TS_LCL_UTC              : 0,
+            apiconst.JSON_API_PROD_PERIOD_ID      : 0,
             apiconst.JSON_API_WM_PULS_CNT         : 0,
             apiconst.JSON_API_WM_CNSMPTN_LTR      : 0,
             apiconst.JSON_API_WM_CNSMPTN_LTR_M3   : 0
         }
 
-        if req.path == apiconst.ROUTE_WATERMETER_HOUR_HELP or \
-            req.path == apiconst.ROUTE_WATERMETER_DAY_HELP  or \
-            req.path == apiconst.ROUTE_WATERMETER_MONTH_HELP or \
-            req.path == apiconst.ROUTE_WATERMETER_YEAR_HELP:
+        if req.path  == apiconst.ROUTE_WATERMETER_MIN_HELP_V2 or \
+            req.path == apiconst.ROUTE_WATERMETER_HOUR_HELP_V2 or \
+            req.path == apiconst.ROUTE_WATERMETER_DAY_HELP_V2  or \
+            req.path == apiconst.ROUTE_WATERMETER_MONTH_HELP_V2 or \
+            req.path == apiconst.ROUTE_WATERMETER_YEAR_HELP_V2:
             
             flog.debug ( str(__name__) + " help data selected.")
             try:
-                resp.body = ( json.dumps( apiconst.HELP_ROUTE_WATERMETER_HOUR_DAY_MONTH_YEAR_JSON, sort_keys=True , indent=2 ) )
+                resp.body = ( json.dumps( apiconst.HELP_ROUTE_WATERMETER_MIN_HOUR_DAY_MONTH_YEAR_JSON, sort_keys=True , indent=2 ) )
             except Exception as _e:
                 flog.error ( str(__class__.__name__) + ":" + inspect.stack()[0][3] + ": help request failed , reason:" + str(_e.args[0]))
                 raise falcon.HTTPError( 
@@ -2381,30 +2398,32 @@ class Watermeter( object ):
                     apierror.API_GENERAL_ERROR['description'] + str(_e.args[0]), 
                     code=apierror.API_GENERAL_ERROR['code'] 
                     )
-            return     
-            
+            return 
 
-        if req.path == apiconst.ROUTE_WATERMETER_HOUR:
-            sqlstr_base_regular = self.sqlstr_base_regular + const.DB_WATERMETER_UUR_TAB
-            sqlstr_base_round   = self.sqlstr_base_round   + const.DB_WATERMETER_UUR_TAB
-        if req.path == apiconst.ROUTE_WATERMETER_DAY:
-            sqlstr_base_regular = self.sqlstr_base_regular + const.DB_WATERMETER_DAG_TAB
-            sqlstr_base_round   = self.sqlstr_base_round   + const.DB_WATERMETER_DAG_TAB
-        if req.path == apiconst.ROUTE_WATERMETER_MONTH:
-            sqlstr_base_regular = self.sqlstr_base_regular + const.DB_WATERMETER_MAAND_TAB
-            sqlstr_base_round   = self.sqlstr_base_round   + const.DB_WATERMETER_MAAND_TAB
-        if req.path == apiconst.ROUTE_WATERMETER_YEAR:
-            sqlstr_base_regular = self.sqlstr_base_regular + const.DB_WATERMETER_JAAR_TAB
-            sqlstr_base_round   = self.sqlstr_base_round   + const.DB_WATERMETER_JAAR_TAB
+
+
+        # set period index 
+        v_period_id = 0
+        if req.path == apiconst.ROUTE_WATERMETER_MIN_V2:
+            v_period_id = " 11 "
+        elif req.path == apiconst.ROUTE_WATERMETER_HOUR_V2:
+            v_period_id = " 12 "
+        elif req.path == apiconst.ROUTE_WATERMETER_DAY_V2:
+            v_period_id = " 13 "
+        elif req.path == apiconst.ROUTE_WATERMETER_MONTH_V2:
+            v_period_id = " 14 "
+        elif req.path == apiconst.ROUTE_WATERMETER_YEAR_V2:
+            v_period_id = " 15 "
+
 
         # default sql string
-        sqlstr  = sqlstr_base_regular
-        
+        sqlstr = self.sqlstr_base_regular
 
-        if req.path == apiconst.ROUTE_WATERMETER_HOUR or \
-            req.path == apiconst.ROUTE_WATERMETER_DAY or \
-            req.path == apiconst.ROUTE_WATERMETER_MONTH or \
-            req.path == apiconst.ROUTE_WATERMETER_YEAR:
+        if req.path  == apiconst.ROUTE_WATERMETER_MIN_V2 or \
+            req.path == apiconst.ROUTE_WATERMETER_HOUR_V2 or \
+            req.path == apiconst.ROUTE_WATERMETER_DAY_V2 or \
+            req.path == apiconst.ROUTE_WATERMETER_MONTH_V2 or \
+            req.path == apiconst.ROUTE_WATERMETER_YEAR_V2:
             
             # PARAMETERS
             # limit (of records)  {default = all, >0 }
@@ -2418,7 +2437,6 @@ class Watermeter( object ):
             v_starttime = ' order by timestamp '
             # rangetimestamp 
             v_rangetimestamp = ''
-
 
             for key, value in req.params.items():
                # this only gives the first parameter when more are put in
@@ -2470,7 +2488,8 @@ class Watermeter( object ):
                     v_starttime = ''
                     if validate_timestamp_by_length( value ) == True:
                         #print( "key=" + key + " value=" + value ) 
-                        v_rangetimestamp = " where substr(timestamp,1," +  str(len(value)) + ") = '" + value + "' order by timestamp "
+                        #v_rangetimestamp = " where substr(timestamp,1," +  str(len(value)) + ") = '" + value + "' order by timestamp "
+                        v_rangetimestamp = " and substr(timestamp,1," +  str(len(value)) + ") = '" + value + "' order by timestamp "
                     else:
                         raise falcon.HTTPError( 
                             apierror.API_TIMESTAMP_ERROR['status'], 
@@ -2479,14 +2498,16 @@ class Watermeter( object ):
                             code=apierror.API_TIMESTAMP_ERROR['code'] 
                         )
 
-            sqlstr = sqlstr + v_starttime + v_rangetimestamp + v_sort + str(v_limit)
+            sqlstr = sqlstr + " where TIMEPERIOD_ID = " + v_period_id  + v_starttime + v_rangetimestamp + v_sort + str(v_limit)
+
+            #sqlstr = sqlstr + v_starttime + v_rangetimestamp + v_sort + str(v_limit)
             #print( "# sqlstr=" + sqlstr) 
 
             flog.debug ( __class__.__name__ + ":" + inspect.stack()[0][3] + ": SQL = " + sqlstr )
 
             try:
                 # read datbase.
-                records = watermeter_db_uur.select_rec( sqlstr )
+                records = watermeter_db.select_rec( sqlstr )
 
                 if v_json_mode ==  'object': 
                     # process records for JSON opjects
@@ -2495,9 +2516,10 @@ class Watermeter( object ):
                         new_dict = json_data.copy()
                         new_dict[ apiconst.JSON_TS_LCL ]                = a[0]
                         new_dict[ apiconst.JSON_TS_LCL_UTC ]            = a[1]
-                        new_dict[ apiconst.JSON_API_WM_PULS_CNT ]       = a[2]
-                        new_dict[ apiconst.JSON_API_WM_CNSMPTN_LTR ]    = a[3]
-                        new_dict[ apiconst.JSON_API_WM_CNSMPTN_LTR_M3 ] = a[4]
+                        new_dict[ apiconst.JSON_API_PROD_PERIOD_ID ]    = a[2]
+                        new_dict[ apiconst.JSON_API_WM_PULS_CNT ]       = a[3]
+                        new_dict[ apiconst.JSON_API_WM_CNSMPTN_LTR ]    = a[4]
+                        new_dict[ apiconst.JSON_API_WM_CNSMPTN_LTR_M3 ] = a[5]
 
                         json_obj_data.append( new_dict )
 
@@ -2517,14 +2539,16 @@ class Watermeter( object ):
             resp.status = falcon.HTTP_200  # This is the default status
 
 watermeter_resource = Watermeter()
-app.add_route( apiconst.ROUTE_WATERMETER_HOUR,       watermeter_resource )
-app.add_route( apiconst.ROUTE_WATERMETER_HOUR_HELP,  watermeter_resource )
-app.add_route( apiconst.ROUTE_WATERMETER_DAY,        watermeter_resource )
-app.add_route( apiconst.ROUTE_WATERMETER_DAY_HELP,   watermeter_resource )
-app.add_route( apiconst.ROUTE_WATERMETER_MONTH,      watermeter_resource )
-app.add_route( apiconst.ROUTE_WATERMETER_MONTH_HELP, watermeter_resource )
-app.add_route( apiconst.ROUTE_WATERMETER_YEAR,       watermeter_resource )
-app.add_route( apiconst.ROUTE_WATERMETER_YEAR_HELP,  watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_MIN_V2,        watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_MIN_HELP_V2,   watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_HOUR_V2,       watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_HOUR_HELP_V2,  watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_DAY_V2,        watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_DAY_HELP_V2,   watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_MONTH_V2,      watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_MONTH_HELP_V2, watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_YEAR_V2,       watermeter_resource )
+app.add_route( apiconst.ROUTE_WATERMETER_YEAR_HELP_V2,  watermeter_resource )
 
 
 class Phase( object ):

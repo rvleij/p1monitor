@@ -29,10 +29,11 @@ PRG9_ALIAS="P1Api"
 PRG9_PARAMETERS=" --timeout 900 --bind localhost:10721 --worker-tmp-dir /p1mon/mnt/ramdisk --workers 2 P1Api:app --log-level warning"
 PRG10="P1UpgradeAssist.py --restore"
 PRG11="logspacecleaner.sh"
-PRG12="P1Watermeter.py"
+PRG12="P1Watermeter.py" #//TODO aanpassen
 PRG13="P1MQTT.py"
 PRG14="P1GPIO.py"
 PRG15="P1PowerProductionS0.py"
+PRG16="P1WatermeterV2.py"
 P1FILE="p1msg.txt"
 
 
@@ -56,55 +57,38 @@ sudo $PRG_PATH$PRG11
 start() {
 
     # disable power save van de wifi.
-    echo "Wifi power save wordt uitgezet"
+    echo "Wifi power save wordt uitgezet."
     sudo /sbin/iw dev wlan0 set power_save off
     /sbin/iw wlan0 get power_save
+    echo "Wifi power save is uitgezet."
 
     #upgrade assist start
     echo "Upgrade assist wordt gestart."
     $PRG_PATH$PRG10
     # note the watchdog does the import from /p1mon/data 
 
-    #check if upgrade assist gereed is.
-    #if [ $( ps -ef| grep "$PRG10" | grep -v grep | wc -l ) -gt 0 ]
-    #then
-    #    echo " $PRG10 loopt nog, wacht 2 minuten"
-    #    sleep 120 
-    #else
-    #    echo " $PRG10 is gereed, geen pauze gebruikt."
-    #fi  
-    
-    # Serial interface start
-    if [ -e "$PID_PATH$PRG1.pid" ]; then
-        echo "$PRG1 al actief!"
-        return
-    else
-        # set sticky bit for C program to run als p1mon 
-        sudo /bin/chmod +s /p1mon/scripts/p1monExec
-        # remove status file als dat bestaat
-        sudo /bin/rm $RAMDISK$STATUS_FILE &>/dev/null 
-        #sudo nice --adjustment=-15 su -c p1mon $PRG_PATH$PRG1 &>/dev/null &
-        sudo nice --adjustment=-15 sudo -i -u p1mon $PRG_PATH$PRG1 &>/dev/null &
-        echo "$PRG1.started"
-        touch "$PID_PATH$PRG1.pid"
-    sudo chmod a+rw "$PID_PATH$PRG1.pid" &>/dev/null
+    # failsave stop of processed that may stil be running
+    echo "failsave stop voor dat de processen weer worden gestart."
+    stop
+    echo "2 seconden wachttijd"
+    sleep 2
+
+    # set sticky bit for C program to run als p1mon 
+    sudo /bin/chmod +s /p1mon/scripts/p1monExec
+    # remove status file als dat bestaat
+    sudo /bin/rm $RAMDISK$STATUS_FILE &>/dev/null 
+    #sudo nice --adjustment=-15 su -c p1mon $PRG_PATH$PRG1 &>/dev/null &
+    sudo nice --adjustment=-15 sudo -i -u p1mon $PRG_PATH$PRG1 &>/dev/null &
+    echo "$PRG1 gestart."
     echo "5 seconden wachttijd"
     # tijd zodat de serial db bij het starten gedefragmenteerd kan worden
-	sleep 5
-    fi
-   
+    sleep 5
+
     # DB start
-    if [ -e "$PID_PATH$PRG2.pid" ]; then
-        echo "$PRG2 al actief!"
-        return
-    else
-        $PRG_PATH$PRG2 &>/dev/null &
-	echo "$PRG2.started"
-        touch "$PID_PATH$PRG2.pid"
-	sudo chmod a+rw "$PID_PATH$PRG2.pid" &>/dev/null
+    $PRG_PATH$PRG2 &>/dev/null &
+    echo "$PRG2 gestart."
     echo "5 seconden wachttijd"
-	sleep 5
-    fi
+    sleep 5
 
     # DropBoxDaemon start
     # make folders if not available (thank you -p switch)
@@ -113,128 +97,54 @@ start() {
     sudo find  $DBX_ROOT -type d -exec chmod 774 {} +
     sudo /bin/chmod 774 $DBX_ROOT
     sudo /bin/chown p1mon:p1mon $DBX_ROOT $DBX_ROOT$DBX_DATA $DBX_ROOT$DBX_BACKUP
-    if [ -e "$PID_PATH$PRG7.pid" ]; then
-        echo "$PRG7 al actief!"
-        return
-    else
-        $PRG_PATH$PRG7 &>/dev/null &
-        echo "$PRG7.started"
-        touch "$PID_PATH$PRG7.pid"
-        sudo chmod a+rw "$PID_PATH$PRG7.pid" 2>&1 >/dev/null
-    fi
+    $PRG_PATH$PRG7 &>/dev/null &
+    echo "$PRG7 gestart."
 
     # Watchdog start
-    if [ -e "$PID_PATH$PRG3.pid" ]; then
-        echo "$PRG3 al actief!"
-        return
-    else
-        $PRG_PATH$PRG3 2>&1 >/dev/null &
-        echo "$PRG3.started"
-        touch "$PID_PATH$PRG3.pid"
-        sudo chmod a+rw "$PID_PATH$PRG3.pid" 2>&1 >/dev/null
-    fi
+    $PRG_PATH$PRG3 2>&1 >/dev/null &
+    echo "$PRG3 gestart."
 
     # run weather once to make sure we have the weather database, fixes import issues.
     $PRG_PATH$PRG5 2>&1 >/dev/null & 
 
     # UDP deamon start
-    if [ -e "$PID_PATH$PRG6.pid" ]; then
-        echo "$PRG6 al actief!"
-        return
-    else
-        $PRG_PATH$PRG6 &>/dev/null &
-        echo "$PRG6.started"
-        touch "$PID_PATH$PRG6.pid"
-        sudo chmod a+rw "$PID_PATH$PRG6.pid" 2>&1 >/dev/null
-    fi
+    $PRG_PATH$PRG6 &>/dev/null &
+    echo "$PRG6 gestart."
 
     # UDP broadcast start
-    if [ -e "$PID_PATH$PRG8.pid" ]; then
-        echo "$PRG8 al actief!"
-        return
-    else
-        $PRG_PATH$PRG8 &>/dev/null &
-        echo "$PRG8.started"
-        touch "$PID_PATH$PRG8.pid"
-        sudo chmod a+rw "$PID_PATH$PRG8.pid" 2>&1 >/dev/null
-    fi
+    $PRG_PATH$PRG8 &>/dev/null &
+    echo "$PRG8 gestart."
 
     # API start
-    if [ -e "$PID_PATH$PRG9_ALIAS.pid" ]; then
-        echo "$PRG9_ALIAS al actief!"
-        return
-    else
-        $PRG9_PATH$PRG9$PRG9_PARAMETERS 2>&1 >/dev/null &
-        echo "$PRG9_ALIAS.started"
-        touch "$PID_PATH$PRG9_ALIAS.pid"
-        sudo chmod a+rw "$PID_PATH$PRG9_ALIAS.pid" 2>&1 >/dev/null
-    fi
-
-    # Watermeter start
-    if [ -e "$PID_PATH$PRG12.pid" ]; then
-        echo "$PRG12 al actief!"
-        return
-    else
-        $PRG_PATH$PRG12 &>/dev/null &
-	echo "$PRG12.started"
-        touch "$PID_PATH$PRG12.pid"
-	sudo chmod a+rw "$PID_PATH$PRG12.pid" &>/dev/null
-    fi
+    $PRG9_PATH$PRG9$PRG9_PARAMETERS 2>&1 >/dev/null &
+    echo "$PRG9_ALIAS gestart."
 
     # MQTT start
-    if [ -e "$PID_PATH$PRG13.pid" ]; then
-        echo "$PRG13 al actief!"
-        return
-    else
-        $PRG_PATH$PRG13 &>/dev/null &
-	echo "$PRG13.started"
-        touch "$PID_PATH$PRG13.pid"
-	sudo chmod a+rw "$PID_PATH$PRG13.pid" &>/dev/null
-    fi
+    $PRG_PATH$PRG13 &>/dev/null &
+    echo "$PRG13 gestart."
 
     # GPIO start
-    if [ -e "$PID_PATH$PRG14.pid" ]; then
-        echo "$PRG14 al actief!"
-        return
-    else
-        $PRG_PATH$PRG14 &>/dev/null &
-    echo "$PRG14.started"
-        touch "$PID_PATH$PRG14.pid"
-    sudo chmod a+rw "$PID_PATH$PRG14.pid" &>/dev/null
-    fi
-
-    # oude code, wordt gestart via de Watchdog.
-    # Powerproduction start
-    #if [ -e "$PID_PATH$PRG15.pid" ]; then
-    #    echo "$PRG15 al actief!"
-    #    return
-    #else
-    #    $PRG_PATH$PRG15 &>/dev/null &
-    #echo "$PRG15.started"
-    #    touch "$PID_PATH$PRG15.pid"
-    #sudo chmod a+rw "$PID_PATH$PRG15.pid" &>/dev/null
-    #fi
+    $PRG_PATH$PRG14 &>/dev/null &
+    echo "$PRG14 gestart."
 
 }
 
-
-function is_script_running() {
-    if [ $( ps -ef| grep $1 | grep -v grep | wc -l ) -gt 0 ]
-    then
-      echo " $1 already running"
-      echo "1"
-    else
-      echo " $1 is not running"
-      echo "0"
-    fi
-}
+#function is_script_running() {
+#    if [ $( ps -ef| grep $1 | grep -v grep | wc -l ) -gt 0 ]
+#    then
+#      echo " $1 already running"
+#      echo "1"
+#    else
+#      echo " $1 is not running"
+#      echo "0"
+#    fi
+#}
 
 function process_kill() {
     PID=$( pidof -x $1 )
-    #echo $PID
     if [ -z "$PID" ]
     then
-        echo "Geen pid gevonden voor proces naam "$1
+        echo "Geen pid gevonden voor proces $1, proces is niet actief."
     else
         echo "Killing pid(s) "$PID" proces naam is "$1
         sudo kill -s SIGINT $PID 1>&2 >/dev/null
@@ -254,7 +164,17 @@ function process_kill() {
         else 
             echo "Failsave kill gestart, dit is niet normaal voor proces "$1
             echo "------------------------------------------------------------"
-            sudo kill -s SIGTERM $PID 1>&2 >/dev/null
+            # reread processes, to make sure we have the right one
+            PID=$( pidof -x $1 )
+            sudo kill -s SIGINT $PID 1>&2 >/dev/null
+            echo "timeout is $2 seconden"
+            sleep 1
+            if [ -z "$PID" ]; then
+                echo "forceer het stoppen van proces "$1
+                sudo kill -s SIGTERM $PID 1>&2 >/dev/null
+                sleep 1
+                sudo killall $1
+            fi
         fi
     fi
 }
@@ -263,126 +183,47 @@ stop() {
 
     echo "Processen worden gestopt, even geduld aub."
 
-    # Powerproduction stop
-    if [ -e "$PID_PATH$PRG15.pid" ]; then
-        process_kill $PRG15 10
-        sudo rm "$PID_PATH$PRG15.pid" &>/dev/null
-    else
-        echo "$PRG15 is niet actief!"
-    fi
+    # Serial interface stop
+    process_kill $PRG1
 
     # GPIO stop
-    if [ -e "$PID_PATH$PRG14.pid" ]; then
-        process_kill $PRG14
-        sudo rm "$PID_PATH$PRG14.pid" &>/dev/null
-    else
-        echo "$PRG14 is niet actief!"
-    fi
+    process_kill $PRG14
 
     # MQTT stop
-    if [ -e "$PID_PATH$PRG13.pid" ]; then
-        process_kill $PRG13
-        sudo rm "$PID_PATH$PRG13.pid" &>/dev/null
-    else
-        echo "$PRG13 is niet actief!"
-    fi
+    process_kill $PRG13
 
-    # Watermeter stop
-    if [ -e "$PID_PATH$PRG12.pid" ]; then
-        process_kill $PRG12
-        sudo rm "$PID_PATH$PRG12.pid" &>/dev/null
-    else
-        echo "$PRG12 is niet actief!"
-    fi
+    # API stop
+    process_kill $PRG9
 
-     # API stop
-     if [ -e "$PID_PATH$PRG8.pid" ]; then
-        process_kill $PRG9
-        #sudo killall --signal 2 $PRG9 1>&2 >/dev/null
-        #failsave kill
-        #sleep 2
-        #sudo killall $PRG9 &>/dev/null
-        sudo rm "$PID_PATH$PRG9_ALIAS.pid" &>/dev/null
-    else
-        echo "$PRG9_ALIAS is niet actief!" 
-    fi
+    # UDP broadcast stop
+    process_kill $PRG8
 
-     #UDP broadcast stop
-    if [ -e "$PID_PATH$PRG8.pid" ]; then
-        process_kill $PRG8
-        #sudo killall --signal 2 $PRG8 1>&2 >/dev/null
-        #failsave kill
-        #sleep 2
-        #sudo killall $PRG8 &>/dev/null
-        sudo rm "$PID_PATH$PRG8.pid" &>/dev/null
-    else
-        echo "$PRG8 is niet actief!" 
-    fi
+    # Dropbox stop
+    process_kill $PRG7
 
-    #Dropbox stop
-    if [ -e "$PID_PATH$PRG7.pid" ]; then
-        process_kill $PRG7
-        #sudo killall --signal 2 $PRG7 1>&2 >/dev/null
-        #failsave kill
-        #sleep 2
-        #sudo killall $PRG7 &>/dev/null
-        sudo rm "$PID_PATH$PRG7.pid" &>/dev/null
-    else
-        echo "$PRG7 is niet actief!" 
-    fi
-
-    #Udp Sender stop
-    if [ -e "$PID_PATH$PRG6.pid" ]; then
-        process_kill $PRG6 
-        #sudo killall --signal 2 $PRG6 1>&2 >/dev/null
-        #failsave kill
-        #sleep 2
-        #sudo killall $PRG6 &>/dev/null
-        sudo rm "$PID_PATH$PRG6.pid" &>/dev/null
-    else
-        echo "$PRG6 is niet actief!" 
-    fi
+    # Udp Sender stop
+    process_kill $PRG6
 
     # Watchdog stop
-    if [ -e "$PID_PATH$PRG3.pid" ]; then
-        process_kill $PRG3 
-        #sudo killall --signal 2 $PRG3 1>&2 >/dev/null
-        #failsave kill
-        #sleep 2
-        #sudo killall $PRG3 &>/dev/null
-        sudo rm "$PID_PATH$PRG3.pid" &>/dev/null
-    else
-        echo "$PRG3 is niet actief!" 
-    fi
-    # Serial interface stop
-    if [ -e "$PID_PATH$PRG1.pid" ]; then
-        process_kill $PRG1
-        #sudo killall --signal 2 $PRG1 &>/dev/null
-	    #failsave kill
-	    #sleep 2
- 	    #sudo killall $PRG1 1>&2 >/dev/null
-        sudo rm "$PID_PATH$PRG1.pid" &>/dev/null
-    else
-        echo "$PRG1 is niet actief!"
-    fi
+    process_kill $PRG3
 
     # DB stop
-    if [ -e "$PID_PATH$PRG2.pid" ]; then
-        process_kill $PRG2
-        #sudo killall --signal 2 $PRG2 &>/dev/null
-	    #failsave kill
-	    #sleep 2
-        #sudo killall $PRG2 &>/dev/null
-        sudo rm "$PID_PATH$PRG2.pid" &>/dev/null
-    else
-        echo "$PRG2 is niet actief!"
-    fi
+    process_kill $PRG2
+
+    # door de watchdog gestarte processen stoppen na het
+    # stoppen van de watchdog
+
+    # Powerproduction stop
+    process_kill $PRG15 5
+
+    # P1WatermeterV2
+    process_kill $PRG16 5
 
 }
 
 cleardb() {
   # database files worden hernoemd en niet gewist als noodmaatregel.
-  # in ram zullen ze verdwijnen op disk blijven bestaan. 
+  # in ram zullen ze verdwijnen op disk blijven ze bestaan.
   echo  "database files worden hernoemd met .bak extentie"
   # geef de bestaande db bestanden een bak extentie.
   echo "Backup maken van data folder "${DATADISK}

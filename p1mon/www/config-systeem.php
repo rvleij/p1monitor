@@ -54,13 +54,13 @@ if ( isset($_POST['systemaction']) ) {
 	if ($_POST['systemaction'] === 'reboot'){ 
 		//print "Reboot !<br>";
 		writeSemaphoreFile('reboot');
-		header('Location:by.php');
+		header('Location:bye.php');
 	}
 
 	if ( $_POST['systemaction'] === 'stop'){ 
 		//print "Stop !<br>";
 		writeSemaphoreFile('halt');
-		header('Location:by.php');
+		header('Location:bye.php');
 	}
 	
 	if ( $_POST['systemaction'] === 'clear_password'){ 

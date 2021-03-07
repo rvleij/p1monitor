@@ -41,10 +41,11 @@ weer_history_db_dag   = historyWeatherDB()
 weer_history_db_maand = historyWeatherDB()
 weer_history_db_jaar  = historyWeatherDB()
 temperature_db        = temperatureDB()
-watermeter_db_uur     = WatermeterDB()
-watermeter_db_dag     = WatermeterDB()
-watermeter_db_maand   = WatermeterDB()
-watermeter_db_jaar    = WatermeterDB()
+#watermeter_db_uur     = WatermeterDB()
+#watermeter_db_dag     = WatermeterDB()
+#watermeter_db_maand   = WatermeterDB()
+#watermeter_db_jaar    = WatermeterDB()
+watermeter_db         = WatermeterDBV2()
 fase_db               = PhaseDB()
 power_production_db   = powerProductionDB()
 
@@ -240,6 +241,15 @@ def Main(argv):
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_TEMPERATUUR_TAB +" succesvol geopend.")
 
+    # open van watermeter database
+    try:    
+        watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
+    except Exception as e:
+        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(20)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
+        sys.exit(1)
+    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
+
+    """
     # open van watermeter databases
     try:    
         watermeter_db_uur.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
@@ -268,6 +278,7 @@ def Main(argv):
         flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_JAAR_TAB  + " succesvol geopend." )
+    """
 
     # open van fase database      
     try:
@@ -346,6 +357,11 @@ def Main(argv):
     flog.info(inspect.stack()[0][3]+": temperatuur sql gexporteerd.")
     updateStatusPct(statusfile, 60, record_cnt)
 
+    flog.info(inspect.stack()[0][3]+": verwerken van " + const.DB_WATERMETERV2 )
+    record_cnt = record_cnt + watermeter_db.sql2file( const.DIR_EXPORT + const.DB_WATERMETERV2 + exportcode )
+    updateStatusPct(statusfile, 70, record_cnt)
+
+    """
     flog.info(inspect.stack()[0][3]+": verwerken van " + const.DB_WATERMETER )
     record_cnt = record_cnt + watermeter_db_uur.sql2file( const.DIR_EXPORT + const.DB_WATERMETER + exportcode )
     updateStatusPct(statusfile, 70, record_cnt)
@@ -359,7 +375,7 @@ def Main(argv):
     record_cnt = record_cnt + watermeter_db_jaar.sql2file( const.DIR_EXPORT + const.DB_WATERMETER + exportcode )
     flog.info(inspect.stack()[0][3]+": watermeter sql gexporteerd.")
     updateStatusPct(statusfile, 74, record_cnt)
-
+    """
 
 
     # /p1mon/www/custom aan archief toevoegen
@@ -446,8 +462,8 @@ def Main(argv):
 
     try:
         flog.info(inspect.stack()[0][3]+": watermeter sql aan zip file toevoegen.")
-        zf.write(const.DIR_EXPORT +  const.DB_WATERMETER + exportcode, compress_type=zipfile.ZIP_DEFLATED)
-        os.remove(const.DIR_EXPORT + const.DB_WATERMETER + exportcode)
+        zf.write(const.DIR_EXPORT +  const.DB_WATERMETERV2 + exportcode, compress_type=zipfile.ZIP_DEFLATED)
+        os.remove(const.DIR_EXPORT + const.DB_WATERMETERV2 + exportcode)
         updateStatusPct(statusfile, 94, record_cnt) 
     except Exception as e:
         flog.error(inspect.stack()[0][3]+": watermeter sql aan zip file toevoegen gefaald")
@@ -468,7 +484,6 @@ def Main(argv):
     except Exception as e:
         flog.error(inspect.stack()[0][3]+": kWh levering data sql aan zip file toevoegen gefaald")
 
-
     zf.close()
     flog.info(inspect.stack()[0][3]+": zipfile "+zipfilename+" gereed.")
     # move to download dir in web tree
@@ -484,7 +499,7 @@ def Main(argv):
     
     try:
         subprocess.run( ['sudo', 'chmod', '0666', downloadfilename], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL )
-        flog.info( inspect.stack()[0][3] + ": zip file rechten aangepast voor bestand" + downloadfilename )
+        flog.info( inspect.stack()[0][3] + ": zip file rechten aangepast voor bestand " + downloadfilename )
     except Exception as e:
         flog.warning( inspect.stack()[0][3] + ": zip file rechten waren niet aan te passen voor bestand " + downloadfilename )
     

@@ -49,7 +49,7 @@ p {
     function hideStuff(boxid){document.getElementById(boxid).style.display="none";}
 
     function loadJSON() {
-        var requestURL = '../json/apiV1p1data.php?order=desc&limit=1&outputmode=array';
+        var requestURL = '/api/v1/smartmeter?limit=1';
         var request = new XMLHttpRequest();
         request.open('GET', requestURL);
         request.responseType = 'json';
@@ -60,9 +60,7 @@ p {
                 showStuff('dynamic_content');
                 hideStuff('api_off');
                 document.getElementById("t1").innerHTML = data[0][0];
-                document.getElementById("v1").innerHTML = data[0][3]+" kWh";
-                document.getElementById("v2").innerHTML = data[0][2]+" kWh";
-                document.getElementById("v3").innerHTML = data[0][7]+" kWh"; 
+                document.getElementById("v3").innerHTML = data[0][8]+" kWh"; 
             }   else {
                 hideStuff('dynamic_content');
                 showStuff('api_off');
@@ -107,8 +105,6 @@ Er kan geen garantie worden gegeven dat een import altijd kan lukken.  Bij een u
 <h1>Demo dynamische verwerking (auto update).</h1>
     <div class='waarde'>Tijdstip verwerking</div><div id="t1" class='waarde'></div><br>
     <div class='waarde'>Huidige verbruik electrisch vermogen</div><div id="v3" class='waarde'></div><br>
-    <div class='waarde'>Meterstand dag/piek verbruik electrisch vermogen</div> <div id="v1" class='waarde'></div><br>
-    <div class='waarde'>Meterstand nacht/dal verbruik electrisch vermogen</div><div id="v2" class='waarde'></div><br>
 </div> 
 
 <h1 id='api_off' class='hide'>API STAAT UIT AANZETTEN IN SETUP SCHERM</h1>

@@ -59,28 +59,28 @@ function readJsonApiPhaseInformationFromStatus(){
             //console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
             if ( j > 105 ) break; // loop only when needed
             if ( jsondata[j][0] == 74 ) {
-                L1Wconsumption = jsondata[j][1] * 1000;
+                L1Wconsumption = Math.ceil( jsondata[j][1] * 1000 );
                 //L1Wconsumption = 6000
                 continue;
             }
             if ( jsondata[j][0] == 75 ) {
-                L2Wconsumption = jsondata[j][1] * 1000;
+                L2Wconsumption = Math.ceil(  jsondata[j][1] * 1000 );
                 continue;
             }
             if ( jsondata[j][0] == 76 ) {
-                L3Wconsumption = jsondata[j][1] * 1000;
+                L3Wconsumption = Math.ceil( jsondata[j][1] * 1000 );
                 continue;
             }
             if ( jsondata[j][0] == 77  ) {
-                L1Wproduction = jsondata[j][1] * 1000;
+                L1Wproduction = Math.ceil( jsondata[j][1] * 1000 );
                 continue;
             }
             if ( jsondata[j][0] == 78  ) {
-                L2Wproduction = jsondata[j][1] * 1000;
+                L2Wproduction = Math.ceil( jsondata[j][1] * 1000 );
                 continue;
             }
             if ( jsondata[j][0] == 79 ) {
-                L3Wproduction = jsondata[j][1] * 1000;
+                L3Wproduction = Math.ceil( jsondata[j][1] * 1000 );
                 continue;
             }
             if ( jsondata[j][0] == 100 ) {

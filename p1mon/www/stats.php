@@ -104,7 +104,6 @@ function createKwhChart() {
                 verticalAlign: 'top',
                 layout: 'horizontal',
                 floating: true,
-                
                 itemStyle: {
                     color: '#6E797C'
                 },
@@ -306,20 +305,6 @@ function updateData() {
 
     chart.series[0].setData( GverbrData );
     chart.series[1].setData( GgelvrData );
-
-    /*
-    if( typeof(chart) !== 'undefined') {
-        chart.series[0].update({
-        pointStart: GverbrData[0][0],
-        data: GverbrData
-    }, false);
-    chart.series[1].update({
-        pointStart: GgelvrData[0][0],
-        data: GgelvrData
-    }, false);
-    chart.redraw();
-    }
-    */
 }
 
 function DataLoop() {

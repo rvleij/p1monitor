@@ -19,7 +19,7 @@ import util
 import cpuinfo
 import subprocess
 
-from sqldb import SqlDb1, rtStatusDb, configDB, temperatureDB, WatermeterDB, PhaseDB
+from sqldb import SqlDb1, rtStatusDb, configDB, temperatureDB, WatermeterDBV2, PhaseDB
 from logger import logging,fileLogger
 from util import fileExist,setFile2user,getUtcTime,cleanDigitStr,alwaysPlus,mkLocalTimeString,isMod
 from datetime import datetime, timedelta
@@ -32,7 +32,8 @@ temperature_db     = temperatureDB()
 e_db_serial        = SqlDb1()
 rt_status_db       = rtStatusDb()
 config_db          = configDB()
-watermeter_db_dag  = WatermeterDB()
+#watermeter_db_dag  = WatermeterDB()
+watermeter_db      = WatermeterDBV2()
 fase_db            = PhaseDB()
 
 #GasStructure = collections.namedtuple('gastructure','previous_gas_value, previous_timestamp, current_gas_value, current_timestamp')
@@ -50,7 +51,6 @@ gelvr_kwh_282       = const.NOT_SET
 act_verbr_kw_170    = const.NOT_SET
 act_gelvr_kw_270    = const.NOT_SET
 gas_verbr_m3_2421   = const.NOT_SET
-
 
 # Gas per m3
 g2h_previous_gas_value 	= const.NOT_SET 
@@ -141,7 +141,6 @@ def clearPhaseDictionary():
     global phase_db_record
     for key in phase_db_record:
         phase_db_record[key] = const.NOT_SET 
-    
 
 def updateJsonData():
     global json_data
@@ -221,6 +220,7 @@ def main_prod():
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_TEMPERATUUR_TAB +" succesvol geopend.")
 
+    """
     # open van watermeter stand
     try:
         watermeter_db_dag.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_DAG_TAB, flog )
@@ -228,8 +228,17 @@ def main_prod():
         flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_DAG_TAB  + " succesvol geopend." )
+    """
 
-    # open van fase database      
+    # open van watermeter database
+    try:    
+        watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
+    except Exception as e:
+        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(3)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
+        sys.exit(1)
+    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
+
+    # open van fase database
     try:
         fase_db.init( const.FILE_DB_PHASEINFORMATION ,const.DB_FASE_REALTIME_TAB )
         fase_db.defrag()
@@ -956,7 +965,7 @@ def checkCRCsettings():
 		p1_crc_check_is_on = False
 	else:
 		p1_crc_check_is_on = True
-	
+
 def instertDbGasValue():
 	global g2h_previous_gas_value 
 	global g2h_previous_timestamp
@@ -1003,7 +1012,7 @@ def instertDbGasValue():
 	#print ( g2h_previous_timestamp )
 	#print ( g2h_current_gas_value )
 	#print ( g2h_current_timestamp) 
-	   
+
 def checkGasTelgramPrefix():
     global gas_record_prefix_number
     try:
@@ -1015,7 +1024,7 @@ def checkGasTelgramPrefix():
             flog.debug(inspect.stack()[0][3]+": gas telegram records niet gewijzigd. huidige waarde "+gas_record_prefix_number)
     except Exception as e:
         flog.error(inspect.stack()[0][3]+": gas telegram prefix record niet gewijzigd."+str(e))
-        
+
 def checkDbConfigSettings():
     global ser1
     global day_night_mode 
@@ -1338,11 +1347,13 @@ def getCurrentWatermeterCount():
     global watermeters_count_total
     try:
         _id, is_water_active, _label = config_db.strget( 96, flog )
-        if int(is_water_active) == 0: # return
+       
+        if int( is_water_active ) == 0: # return
             flog.debug( inspect.stack()[0][3] + ": water meting staat uit. " )
             return
+        
         watermeters_count_total = 0 # failsave if there is no data
-        _timestamp, _utc, _puls_per_timeunit, _verbr_per_timeunit, verbr_in_m3_total =  watermeter_db_dag.select_one_record() 
+        _timestamp, _utc, _puls_per_timeunit, _verbr_per_timeunit, verbr_in_m3_total = watermeter_db.select_one_record() 
         if verbr_in_m3_total != None:
             watermeters_count_total = round( float(verbr_in_m3_total), 3 )
             #print ( watermeters_count_total )
@@ -1365,4 +1376,4 @@ if __name__ == "__main__":
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, saveExit)
     main_prod()
-    
+

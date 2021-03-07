@@ -2,7 +2,8 @@
 import argparse
 import const
 import inspect
-import grp
+#import grp
+import glob
 import os
 import pwd
 import stat
@@ -10,12 +11,11 @@ import sys
 import shutil
 import logger
 
-
-from logger import logging,fileLogger
-from shutil import copy2
-from pwd    import getpwnam
-from os     import umask, geteuid
-from pwd    import getpwuid
+from logger  import logging,fileLogger
+from shutil  import copy2
+from pwd     import getpwnam
+from os      import umask, geteuid
+from pwd     import getpwuid
 
 prgname = 'P1DbCopy'
 
@@ -28,12 +28,14 @@ filelist = [
     const.FILE_DB_WEATHER,
     const.FILE_DB_WEATHER_HISTORIE,
     const.FILE_DB_TEMPERATUUR_FILENAME,
-    const.FILE_DB_WATERMETER,
+    #const.FILE_DB_WATERMETER,
     const.FILE_DB_PHASEINFORMATION,
-    const.FILE_DB_POWERPRODUCTION
+    const.FILE_DB_POWERPRODUCTION,
+    const.FILE_DB_WATERMETERV2
 ]
-  
+
 def Main(argv):
+
     flog.info( "Start van programma " + prgname + "." )
     flog.info(inspect.stack()[0][3]+": wordt uitgevoerd als user -> " + pwd.getpwuid( os.getuid() ).pw_name )
 
@@ -46,7 +48,10 @@ def Main(argv):
     parser.add_argument( '-all2disk','--allcopy2disk',         required=False, action="store_true" )
     parser.add_argument( '-t2disk',  '--temperature2disk',     required=False, action="store_true" )
     parser.add_argument( '-w2disk',  '--watermeter2disk',      required=False, action="store_true" )
+    parser.add_argument( '-w2ram',   '--watermeter2ram',       required=False, action="store_true" )
     parser.add_argument( '-pp2disk', '--powerproduction2disk', required=False, action="store_true" )
+    parser.add_argument( '-pp2ram',  '--powerproduction2ram',  required=False, action="store_true" )
+
     args = parser.parse_args()
 
     #print ( args )
@@ -56,22 +61,37 @@ def Main(argv):
         copyFile( args.sourcefile, args.destinationfolder , args.forcecopy)
         return
 
+    ####################
+    # to disk copy set #
+    ####################
+
+    #watermeter ram to disk copy
+    if args.watermeter2disk == True:
+        flog.debug(inspect.stack()[0][3]+": watermeter bestand naar disk.")
+        makeBackupFileSet( diskPathByFilename( const.FILE_DB_WATERMETERV2 ) )
+        copyFile( const.FILE_DB_WATERMETERV2 , const.DIR_FILEDISK, args.forcecopy )
+        return
+
     #powerproduction to ram to disk copy
     if args.powerproduction2disk == True:
-        flog.debug(inspect.stack()[0][3]+": kWh eigen levering bestand.")
+        flog.debug(inspect.stack()[0][3]+": kWh eigen levering bestand naar disk.")
+        makeBackupFileSet( diskPathByFilename( const.FILE_DB_POWERPRODUCTION) )
         copyFile( const.FILE_DB_POWERPRODUCTION , const.DIR_FILEDISK, args.forcecopy )
         return
 
+    """
     #watermeter to ram to disk copy
     if args.temperature2disk == True:
-        flog.debug(inspect.stack()[0][3]+": watermeter bestand.")
+        flog.debug(inspect.stack()[0][3]+": watermeter bestand maar disk.")
         copyFile( const.FILE_DB_WATERMETER , const.DIR_FILEDISK, args.forcecopy )
         return
+    """
 
-     #temperature to ram to disk copy
+    #temperature to ram to disk copy
     if args.temperature2disk == True:
-        flog.debug(inspect.stack()[0][3]+": temperatuur bestand.")
-        copyFile(const.FILE_DB_TEMPERATUUR_FILENAME , const.DIR_FILEDISK, args.forcecopy)
+        flog.debug(inspect.stack()[0][3]+": temperatuur bestand naar disk.")
+        makeBackupFileSet( diskPathByFilename( const.FILE_DB_TEMPERATUUR_FILENAME ) )
+        copyFile( const.FILE_DB_TEMPERATUUR_FILENAME , const.DIR_FILEDISK, args.forcecopy)
         return
 
     #serial to ram to disk copy
@@ -80,7 +100,8 @@ def Main(argv):
         #print ( 'serialcopy2disk' )
         #print ( const.FILE_DB_E_FILENAME )
         #print ( const.DIR_FILEDISK )
-        copyFile(const.FILE_DB_E_FILENAME , const.DIR_FILEDISK, args.forcecopy)
+        makeBackupFileSet( diskPathByFilename( const.FILE_DB_E_FILENAME ) )
+        copyFile( const.FILE_DB_E_FILENAME , const.DIR_FILEDISK, args.forcecopy)
         return
 
     #all to ram to disk copy
@@ -89,29 +110,101 @@ def Main(argv):
         listCopy( const.DIR_FILEDISK, const.DIR_RAMDISK, filelist ,args.forcecopy)
         return
 
-    #all to ram to disk copy
+    ####################
+    # to ram copy set  #
+    ####################
+
+    #all to disk to ram copy
     if args.allcopy2disk == True:
         flog.debug(inspect.stack()[0][3]+": allcopy2disk")
         listCopy( const.DIR_RAMDISK, const.DIR_FILEDISK, filelist ,args.forcecopy)
         return
 
+    # watermeter disk to ram copy
+    if args.watermeter2ram == True:
+        flog.debug(inspect.stack()[0][3]+": watermeter bestand naar ram.")
+        copyFile( diskPathByFilename( const.FILE_DB_WATERMETERV2) , const.DIR_RAMDISK, args.forcecopy )
+        return
+    
+     # watermeter disk to ram copy
+    if args.powerproduction2ram == True:
+        flog.debug(inspect.stack()[0][3]+": kWh eigen levering bestand naar ram.")
+        copyFile( diskPathByFilename( const.FILE_DB_POWERPRODUCTION ) , const.DIR_RAMDISK, args.forcecopy )
+        return
+
+
 # functions
+
+##########################################
+# make a set if backup files filename.?  #
+##########################################
+def makeBackupFileSet( filePath ):
+
+    if ( fileExist( filePath ) == False ):
+        #print ( "# 0 geen file = ", filePath )
+        return # there is no source file so return.
+
+    # if the first backup does not exits we dont have to shift
+    # other files.
+
+    if ( fileExist( filePath + ".1" ) == True ):
+        try: # file.1 does exists we have to make room
+            #print ( "# 1 rename = ", filePath )
+            
+            for i in reversed( range( 1, 3) ):
+                file_to_rename = filePath + "." + str(i)
+                next_file_name = filePath + "." + str(i+1)
+
+                #print ( "# 2 rename = ", file_to_rename, " to ", next_file_name )
+
+                try:
+                    if ( fileExist( file_to_rename ) ):
+                        os.rename( file_to_rename, next_file_name )
+                except Exception as e:
+                    print ( "# 3 = ", e )
+
+        except Exception as _e:
+            pass
+            #print ( "# 4 = ", e )
+
+    try:
+        os.rename( filePath, filePath+".1" )
+    except Exception as _e:
+        pass
+        #print ( "# 5 = ", e )
+
+
+
+
+
+##############################################
+# make a complete path to disk from ram path #
+##############################################
+def diskPathByFilename( filename ):
+    _path,tail = os.path.split( filename )
+    return const.DIR_FILEDISK + tail
+
 def listCopy(sourcefolder , destinationfolder, filelist, forcecopy):
+    # only make an back=up version of the file when copying to disk
+    if destinationfolder == const.DIR_FILEDISK:
+         for filename in filelist:
+             makeBackupFileSet( diskPathByFilename( filename ) )
+
     for filename in filelist:
         _path,tail = os.path.split( filename )
         copyFile( sourcefolder+tail, destinationfolder, forcecopy )
 
-def copyFile(sourcefile, destinationfolder, forcecopy):
+def copyFile( sourcefile, destinationfolder, forcecopy ):
     
     _path, file = os.path.split( sourcefile )
     
     """
-    print ( file )
-    print ( _path )
-    print ( sourcefile )
-    print ( destinationfolder )
-    print ( forcecopy )
-    print ( fileExist(  destinationfolder + file) )
+    print ( "file =",file )
+    print ( "_path = ",_path )
+    print ( "sourcefile = ",sourcefile )
+    print ( "destinationfolder = ", destinationfolder )
+    print ( "forcecopy = ", forcecopy )
+    print ( "fileExist = ", fileExist(  destinationfolder + file) )
     """
 
     if forcecopy == False: # only copy when forced
@@ -136,19 +229,6 @@ def setFile2user( filename ):
         flog.error(inspect.stack()[0][3]+": setFile2user fout: " + str(e) + "voor file " + filename )
         return False
     return True
-
-"""
-def setFile2user( filename, username ):
-    try :
-        os.chmod(filename, stat.S_IREAD|stat.S_IWRITE|stat.S_IRGRP|stat.S_IWGRP|stat.S_IROTH)
-        fd = os.open(filename, os.O_RDONLY)
-        os.fchown( fd, name2uid(username), name2gid(username) )
-        os.close( fd )
-    except Exception as e:
-        flog.error(inspect.stack()[0][3]+": setFile2user fout: " + str(e) + "voor file " + filename )
-        return False
-    return True
-"""
 
 def fileExist(filename):
     if os.path.isfile(filename):

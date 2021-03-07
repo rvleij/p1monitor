@@ -1,6 +1,7 @@
 #constants 
 # Versie 0.1 27-12-2018 eerste versie
 # versie 1.0 30-11-2019 watermeter toegevoegd
+# versie 1.1 13-01-2021 powerproduction aanpassingen en watermeter API aanpassingen.
 
 # routing
 ROUTE_CATALOG         = '/api/v1/catalog'
@@ -80,19 +81,39 @@ ROUTE_INDOOR_TEMPERATURE_MONTH_HELP = ROUTE_INDOOR_TEMPERATURE_MONTH + '/help'
 ROUTE_INDOOR_TEMPERATURE_YEAR       = '/api/v1/indoor/temperature/year'
 ROUTE_INDOOR_TEMPERATURE_YEAR_HELP  = ROUTE_INDOOR_TEMPERATURE_YEAR + '/help'
 
+"""
+#BASE_WATERMETER                     = 'watermeter' # don't use in path
+#ROUTE_WATERMETER_MIN                = '/api/v1/watermeter/min'
+#ROUTE_WATERMETER_MIN_HELP           = ROUTE_WATERMETER_MIN + '/help'
+
+#ROUTE_WATERMETER_HOUR               = '/api/v1/watermeter/hour'
+#ROUTE_WATERMETER_HOUR_HELP          = ROUTE_WATERMETER_HOUR + '/help'
+
+#ROUTE_WATERMETER_DAY                 = '/api/v1/watermeter/day'
+#ROUTE_WATERMETER_DAY_HELP           = ROUTE_WATERMETER_DAY + '/help'
+
+#ROUTE_WATERMETER_MONTH              = '/api/v1/watermeter/month'
+#ROUTE_WATERMETER_MONTH_HELP         = ROUTE_WATERMETER_MONTH + '/help'
+
+#ROUTE_WATERMETER_YEAR               = '/api/v1/watermeter/year'
+#ROUTE_WATERMETER_YEAR_HELP          = ROUTE_WATERMETER_YEAR + '/help'
+"""
+
 BASE_WATERMETER                     = 'watermeter' # don't use in path
-ROUTE_WATERMETER_HOUR               = '/api/v1/watermeter/hour'
-ROUTE_WATERMETER_HOUR_HELP          = ROUTE_WATERMETER_HOUR + '/help'
+ROUTE_WATERMETER_MIN_V2             = '/api/v2/watermeter/minute'
+ROUTE_WATERMETER_MIN_HELP_V2        = ROUTE_WATERMETER_MIN_V2 + '/help'
 
-ROUTE_WATERMETER_DAY                 = '/api/v1/watermeter/day'
-ROUTE_WATERMETER_DAY_HELP           = ROUTE_WATERMETER_DAY + '/help'
+ROUTE_WATERMETER_HOUR_V2            = '/api/v2/watermeter/hour'
+ROUTE_WATERMETER_HOUR_HELP_V2       = ROUTE_WATERMETER_HOUR_V2 + '/help'
 
-ROUTE_WATERMETER_MONTH              = '/api/v1/watermeter/month'
-ROUTE_WATERMETER_MONTH_HELP         = ROUTE_WATERMETER_MONTH + '/help'
+ROUTE_WATERMETER_DAY_V2             = '/api/v2/watermeter/day'
+ROUTE_WATERMETER_DAY_HELP_V2        = ROUTE_WATERMETER_DAY_V2 + '/help'
 
-ROUTE_WATERMETER_YEAR               = '/api/v1/watermeter/year'
-ROUTE_WATERMETER_YEAR_HELP          = ROUTE_WATERMETER_YEAR + '/help'
+ROUTE_WATERMETER_MONTH_V2           = '/api/v2/watermeter/month'
+ROUTE_WATERMETER_MONTH_HELP_V2      = ROUTE_WATERMETER_MONTH_V2 + '/help'
 
+ROUTE_WATERMETER_YEAR_V2            = '/api/v2/watermeter/year'
+ROUTE_WATERMETER_YEAR_HELP_V2       = ROUTE_WATERMETER_YEAR_V2 + '/help'
 
 BASE_POWERPRODUCTION_S0             = 'powerproduction' # don't use in path
 ROUTE_POWERPRODUCTION_S0_MIN        = '/api/v1/powerproduction/minute'
@@ -183,8 +204,8 @@ JSON_API_RM_TMPRTR_OUT_L    = 'ROOM_TEMPERATURE_OUT_LOW'             # room temp
 JSON_API_RM_TMPRTR_OUT_A    = 'ROOM_TEMPERATURE_OUT_AVERAGE'         # room temperature output, average value degrees Celsius.
 JSON_API_RM_TMPRTR_OUT_H    = 'ROOM_TEMPERATURE_OUT_HIGH'            # room temperature output, high value in degrees Celsius.
 
-JSON_API_WM_PULS_CNT        = 'WATERMETER_PULS_COUNT'                # Nummer of detected pulses per timeunit (hour, day, month, year).
-JSON_API_WM_CNSMPTN_LTR     = 'WATERMETER_CONSUMPTION_LITER'         # Liter of waterused per timeunit (hour, day, month, year).
+JSON_API_WM_PULS_CNT        = 'WATERMETER_PULS_COUNT'                # Nummer of detected pulses per timeunit (min, hour, day, month, year).
+JSON_API_WM_CNSMPTN_LTR     = 'WATERMETER_CONSUMPTION_LITER'         # Liter of waterused per timeunit (min, hour, day, month, year).
 JSON_API_WM_CNSMPTN_LTR_M3  = 'WATERMETER_CONSUMPTION_TOTAL_M3'      # consumption of water in M3 during the period.
 
 JSON_API_PHS_CNSMPTN_L1_W   = 'CONSUMPTION_L1_W'                     # Consumption of W for phase L1
@@ -209,7 +230,7 @@ JSON_API_PROD_PULS_CNT_L    = 'PULS_PER_TIMEUNIT_LOW'                # Number of
 JSON_API_PROD_KWH_TOTAL_H   = 'PRODUCTION_KWH_HIGH_TOTAL'            # total kWh during the period for the high tariff.
 JSON_API_PROD_KWH_TOTAL_L   = 'PRODUCTION_KWH_LOW_TOTAL'             # total kWh during the period for the low tariff.
 JSON_API_PROD_KWH_TOTAL     = 'PRODUCTION_KWH_TOTAL'                 # total kWh during the period for the low and high tariff.
-JSON_API_PROD_KW_PSEUDO     = 'PRODUCTION_PSEUDO_KW'                 # total kW calculated during the period, this is an simulated/approximated value.
+JSON_API_PROD_W_PSEUDO      = 'PRODUCTION_PSEUDO_W'                  # total Watt calculated during the period, this is an simulated/approximated value.
 
 
 #JSON field explained.
@@ -284,8 +305,8 @@ EXPL_API_RM_TMPRTR_OUT_L    = 'Room temperature output, low value in degrees Cel
 EXPL_API_RM_TMPRTR_OUT_A    = 'Room temperature output, average value degrees Celsius.'
 EXPL_API_RM_TMPRTR_OUT_H    = 'Room temperature output, high value in degrees Celsius.'
 
-EXPL_API_WM_PULS_CNT        = 'Nummer of detected pulses per timeunit (hour, day, month, year).'
-EXPL_API_WM_CNSMPTN_LTR     = 'Liter of waterused per timeunit (hour, day, month, year).'
+EXPL_API_WM_PULS_CNT        = 'Nummer of detected pulses per timeunit (minute,hour, day, month, year).'
+EXPL_API_WM_CNSMPTN_LTR     = 'Liter of waterused per timeunit (minute,hour, day, month, year).'
 EXPL_API_WM_CNSMPTN_LTR_M3  = 'Consumption of water in M3 during the period.'
 
 EXPL_API_PHS_CNSMPTN_L1_W   = 'Consumption of Watt for phase L1'
@@ -310,7 +331,7 @@ EXPL_API_PROD_PULS_CNT_L    = 'Number of detected pulses per timeunit (min, hour
 EXPL_API_PROD_KWH_TOTAL_H   = 'Total kWh during the period for the high tariff.'
 EXPL_API_PROD_KWH_TOTAL_L   = 'Total kWh during the period for the low tariff.'
 EXPL_API_PROD_KWH_TOTAL     = 'Total kWh during the period for the low and high tariff.'
-EXPL_API_PROD_KW_PSEUDO     = 'Total kW calculated during the period, this is an simulated/approximated value.'
+EXPL_API_PROD_W_PSEUDO      = 'Total Watt calculated during the period, this is an simulated/approximated value.'
 
 #json types
 TYPE_JSON_STRING         = 'string'
@@ -1006,12 +1027,12 @@ HELP_ROUTE_INDOOR_TEMPERATURE_JSON = {
 # select TIMESTAMP, cast(strftime('%s', TIMESTAMP, 'utc' ) AS Integer), CITY_ID, CITY, TEMPERATURE_MIN, TEMPERATURE_AVG, TEMPERATURE_MAX, 
 # PRESSURE_MIN, PRESSURE_AVG, PRESSURE_MAX, HUMIDITY_MIN, HUMIDITY_AVG, HUMIDITY_MAX, WIND_SPEED_MIN, WIND_SPEED_AVG, WIND_SPEED_MAX, 
 # WIND_DEGREE_MIN, WIND_DEGREE_AVG, WIND_DEGREE_MAX from
-HELP_ROUTE_WATERMETER_HOUR_DAY_MONTH_YEAR_JSON = {
+HELP_ROUTE_WATERMETER_MIN_HOUR_DAY_MONTH_YEAR_JSON = {
     "api_version"       : 1,
     "api_status"        : API_STATUS_TEST,
     "api_options"       :  API_OPTION_LIMIT + ', ' + API_OPTION_SORT_TIMESTAMP + ', ' + API_OPTION_JSON  + ', ' + API_OPTION_ROUND + ", " + API_OPTION_STARTTIMESTAMP + ", " + API_OPTION_RANGE,
     "api_description"   : "Historical watermeter data.",
-    "api_usage"         : "<ip>{" + ROUTE_WATERMETER_HOUR + ', ' + ROUTE_WATERMETER_DAY + ', ' + ROUTE_WATERMETER_MONTH + ', ' + ROUTE_WATERMETER_YEAR + '}?' + API_PARAMETER_LIMIT +'=10&' + API_PARAMETER_SORT + '=asc&' + API_PARAMETER_JSON_TYPE + '=object&' + API_PARAMETER_ROUND + '=on&' + API_PARAMETER_STARTTIMESTAMP + '=2019-11-30 12:03:55, or ' + API_PARAMETER_RANGETIMESTAMP + '=2020-01-03, <ip>{' + ROUTE_WATERMETER_HOUR + ', ' + ROUTE_WATERMETER_DAY + ', ' + ROUTE_WATERMETER_MONTH + ', ' + ROUTE_WATERMETER_YEAR + '},<ip>{' + ROUTE_WATERMETER_HOUR_HELP + ', ' + ROUTE_WATERMETER_DAY_HELP + ', ' + ROUTE_WATERMETER_MONTH_HELP + ', ' +ROUTE_WATERMETER_MONTH_HELP + '}',
+    "api_usage"         : "<ip>{" + ROUTE_WATERMETER_MIN_V2 + ', ' + ROUTE_WATERMETER_HOUR_V2 + ', ' + ROUTE_WATERMETER_DAY_V2 + ', ' + ROUTE_WATERMETER_MONTH_V2 + ', ' + ROUTE_WATERMETER_YEAR_V2 + '}?' + API_PARAMETER_LIMIT +'=10&' + API_PARAMETER_SORT + '=asc&' + API_PARAMETER_JSON_TYPE + '=object&' + API_PARAMETER_ROUND + '=on&' + API_PARAMETER_STARTTIMESTAMP + '=2019-11-30 12:03:55, or ' + API_PARAMETER_RANGETIMESTAMP + '=2020-01-03, <ip>{' + ROUTE_WATERMETER_HOUR_V2 + ', ' + ROUTE_WATERMETER_DAY_V2 + ', ' + ROUTE_WATERMETER_MONTH_V2 + ', ' + ROUTE_WATERMETER_YEAR_V2 + '},<ip>{' + ROUTE_WATERMETER_HOUR_HELP_V2 + ', ' + ROUTE_WATERMETER_DAY_HELP_V2 + ', ' + ROUTE_WATERMETER_MONTH_HELP_V2 + ', ' +ROUTE_WATERMETER_MONTH_HELP_V2 + '}',
     "fields": [
          {
            "name" : JSON_TS_LCL,
@@ -1021,6 +1042,11 @@ HELP_ROUTE_WATERMETER_HOUR_DAY_MONTH_YEAR_JSON = {
          { 
            "name" : JSON_TS_LCL_UTC,
            "description" : EXPL_TS_LCL_UTC,
+           "type": TYPE_JSON_INTEGER
+         },
+         { 
+           "name" : JSON_API_PROD_PERIOD_ID,
+           "description" : EXPL_API_PROD_PERIOD_ID,
            "type": TYPE_JSON_INTEGER
          },
          { 
@@ -1192,8 +1218,8 @@ HELP_ROUTE_POWER_PRODUCTION_MIN_DAY_MONTH_YEAR_JSON = {
            "type": TYPE_JSON_NUMBER
          },
          {
-           "name" : JSON_API_PROD_KW_PSEUDO,
-           "description" : EXPL_API_PROD_KW_PSEUDO,
+           "name" : JSON_API_PROD_W_PSEUDO,
+           "description" : EXPL_API_PROD_W_PSEUDO,
            "type": TYPE_JSON_NUMBER
          }
     ]

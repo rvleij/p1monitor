@@ -35,5 +35,5 @@ I run the container using the following run command:
 
 ## Compiling container images and pushing to Docker Hub
 
-docker buildx build -t rvleij/p1monitor --platform linux/amd64,linux/arm64,linux/arm/v7 --push .
+docker buildx build -t rvleij/p1monitor:vx.y.z -t rvleij/p1monitor:latest --platform linux/amd64,linux/arm64,linux/arm/v7 --push .
 docker buildx imagetools inspect rvleij/p1monitor:latest

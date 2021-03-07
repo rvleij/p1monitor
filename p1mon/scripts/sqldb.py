@@ -35,7 +35,7 @@ class powerProductionDB():
         self.flog  = flog
         # table definition
         # TIMESTAMP the timestamp in format yyyy-mm-dd hh:mm:ss 
-        # TIMEPERIOD: number that represents the hour:12, day,13, month:14, year:15 
+        # TIMEPERIOD: number that represents the minute:11 hour:12, day,13, month:14, year:15 
         # POWER_SOURCE_ID: a number that indicates the power source 0:not defined, 1:S0 energy kWh S0 power meter
         # PRODUCTION_KWH_HIGH / LOW kWh produced during this time peroid
         # PRODUCTION_KWH_HIGH_TOTAL total kWh produced.
@@ -68,7 +68,7 @@ class powerProductionDB():
         reccount = 0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " (TIMESTAMP, TIMEPERIOD_ID, POWER_SOURCE_ID, PRODUCTION_KWH_HIGH, PRODUCTION_KWH_LOW, PULS_PER_TIMEUNIT_HIGH, PULS_PER_TIMEUNIT_LOW, PRODUCTION_KWH_HIGH_TOTAL, PRODUCTION_KWH_LOW_TOTAL, PRODUCTION_KWH_TOTAL, PRODUCTION_PSEUDO_KW ) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,TIMEPERIOD_ID,POWER_SOURCE_ID,PRODUCTION_KWH_HIGH,PRODUCTION_KWH_LOW,PULS_PER_TIMEUNIT_HIGH,PULS_PER_TIMEUNIT_LOW,PRODUCTION_KWH_HIGH_TOTAL, PRODUCTION_KWH_LOW_TOTAL,PRODUCTION_KWH_TOTAL,PRODUCTION_PSEUDO_KW) values ('" + \
             str(i[0]) + "'," +\
             str(i[1]) + "," +\
             str(i[2]) + "," +\
@@ -128,6 +128,12 @@ class powerProductionDB():
             self.close_db()
         return False
 
+    # return number of records in database
+    def record_count( self ):
+        sql = "select count() from " + self.table
+        return int( self.select_rec( sql )[0][0] )
+
+
     def select_rec( self, sqlstr ):
         self.con = lite.connect(self.dbname)
         self.cur = self.con.cursor()
@@ -152,6 +158,172 @@ class powerProductionDB():
         self.con.commit()
         self.close_db()
 
+
+WATERMETER_REC = {
+    'TIMESTAMP'                 :'', 
+    'TIMEPERIOD_ID'             :int(0),
+    'PULS_PER_TIMEUNIT'         :float(0.0),
+    'VERBR_PER_TIMEUNIT'        :float(0.0),
+    'VERBR_IN_M3_TOTAAL'        :float(0.0),
+}
+
+class WatermeterDBV2(): 
+
+    def init( self, dbname, table, flog ):
+        self.dbname = dbname
+        self.con = lite.connect(dbname)
+        self.cur = self.con.cursor()
+        self.table = table
+        self.flog  = flog
+        # table definition
+        # TIMESTAMP the timestamp in format yyyy-mm-dd hh:mm:ss 
+        # TIMEPERIOD: number that represents the minute:11 hour:12, day,13, month:14, year:15 
+        # PULS_PER_TIMEUNIT number of pulses detected during the period
+        # VERBR_PER_TIMEUNIT Liter of water during the period
+        # VERBR_IN_M3_TOTAAL Liter of water in M3 during the period
+        self.cur.execute(" CREATE TABLE IF NOT EXISTS " +table+"(\
+            TIMESTAMP TEXT     TEXT NOT NULL, \
+            TIMEPERIOD_ID      INTEGER NOT NULL DEFAULT 0,\
+            PULS_PER_TIMEUNIT  REAL DEFAULT 0, \
+            VERBR_PER_TIMEUNIT REAL DEFAULT 0, \
+            VERBR_IN_M3_TOTAAL REAL DEFAULT 0, \
+            PRIMARY KEY( TIMESTAMP, TIMEPERIOD_ID )\
+        );")
+        self.close_db()
+
+    def get_timestamp_record( self , timestamp, timeperiod_id ):
+        try:
+            sqlstr = "select TIMESTAMP, TIMEPERIOD_ID, PULS_PER_TIMEUNIT, VERBR_PER_TIMEUNIT, VERBR_IN_M3_TOTAAL from " + self.table + " where TIMEPERIOD_ID = " + str( timeperiod_id ) + " and timestamp  = '" + timestamp + "'"
+            sqlstr = " ".join(sqlstr.split())
+            #self.flog.debug( inspect.stack()[0][3] + ": sql(1)=" + sqlstr )
+            set = self.select_rec( sqlstr )
+            #self.flog.debug( inspect.stack()[0][3] + ": waarde van bestaande record" + str( set ) )
+            if len(set) > 0:
+                return set[0][0],set[0][1],set[0][2],set[0][3],set[0][4]
+        except Exception as e:
+            self.flog.error( inspect.stack()[0][3]+": sql error(1) op table " + self.table + " ->" + str(e) )
+            self.close_db() 
+        return None
+ 
+    def replace_rec_with_values( self, record_values ):
+        try:
+            sqlstr = "replace into " + self.table + " (TIMESTAMP, TIMEPERIOD_ID, PULS_PER_TIMEUNIT, VERBR_PER_TIMEUNIT, VERBR_IN_M3_TOTAAL  ) values ('" + \
+                     record_values['TIMESTAMP'] + "', " +\
+                str( record_values['TIMEPERIOD_ID']   ) + ", " +\
+                str( record_values['PULS_PER_TIMEUNIT'] ) + ", " +\
+                str( record_values['VERBR_PER_TIMEUNIT'] ) + ", " +\
+                str( record_values['VERBR_IN_M3_TOTAAL'] ) +\
+                ");" 
+            sqlstr = " ".join(sqlstr.split())
+            #self.flog.debug( inspect.stack()[0][3] + ": sql(1)=" + sqlstr )
+            self.excute( sqlstr )
+            return True
+        except Exception as e:
+            self.flog.error( inspect.stack()[0][3]+": sql error(1) op table " + self.table + " ->" + str(e) )
+            self.close_db()
+        return False
+
+    def insert_rec_with_values( self, record_values, silent = True ):
+        try:
+            sqlstr = "insert into " + self.table + " (TIMESTAMP, TIMEPERIOD_ID, PULS_PER_TIMEUNIT, VERBR_PER_TIMEUNIT, VERBR_IN_M3_TOTAAL  ) values ('" + \
+                     record_values['TIMESTAMP'] + "', " +\
+                str( record_values['TIMEPERIOD_ID']   ) + ", " +\
+                str( record_values['PULS_PER_TIMEUNIT'] ) + ", " +\
+                str( record_values['VERBR_PER_TIMEUNIT'] ) + ", " +\
+                str( record_values['VERBR_IN_M3_TOTAAL'] ) +\
+                ");" 
+            sqlstr = " ".join(sqlstr.split())
+            #self.flog.debug( inspect.stack()[0][3] + ": sql(1)=" + sqlstr )
+            self.excute( sqlstr )
+            return True
+        except Exception as e:
+            if silent == False:
+                self.flog.error( inspect.stack()[0][3]+": sql error(1) op table " + self.table + " ->" + str(e) )
+            self.close_db()
+        return False
+
+    # volgorde van tuples mag niet worden gewijzigd, wordt gebruikt in MQTT proces.
+    # neemt nu de minuten records in de vorige versie werd uren verstuurd.
+    def select_one_record(self , order='desc' ):
+        try:
+            sqlstr = "select \
+                TIMESTAMP, \
+                cast(strftime('%s', TIMESTAMP, 'utc' ) AS Integer), \
+                PULS_PER_TIMEUNIT,  \
+                VERBR_PER_TIMEUNIT, \
+                VERBR_IN_M3_TOTAAL  \
+                from " + self.table + \
+                " where TIMEPERIOD_ID = 11 order by timestamp " + str(order) + " limit 1;"
+            sqlstr = " ".join( sqlstr.split() )
+            set = self.select_rec( sqlstr )
+            if len(set) > 0:
+                return set[0][0], set[0][1], set[0][2], set[0][3], set[0][4]
+            return None
+        except Exception as _e:
+            print ( _e )
+            return None
+
+    def sql2file(self, filename):
+        #print filename
+        self.con = lite.connect(self.dbname)
+        self.cur = self.con.cursor()
+        self.cur.execute( 'select TIMESTAMP,TIMEPERIOD_ID,PULS_PER_TIMEUNIT,VERBR_PER_TIMEUNIT,VERBR_IN_M3_TOTAAL from ' + \
+            self.table + ' order by TIMESTAMP' )
+        r=self.cur.fetchall()
+        self.close_db() 
+        # put the stuff into a file
+        # print ( r[0] )
+        reccount = 0
+        f = open(filename,"a")
+        for i in r:
+            line = "replace into " + self.table + " (TIMESTAMP,TIMEPERIOD_ID,PULS_PER_TIMEUNIT,VERBR_PER_TIMEUNIT,VERBR_IN_M3_TOTAAL) values ('" + \
+            str(i[0]) + "'," +\
+            str(i[1]) + "," +\
+            str(i[2]) + "," +\
+            str(i[3]) + "," +\
+            str(i[4]) + \
+            ");"
+            #print  ( line )
+            f.write(line+'\n')
+            reccount = reccount + 1
+        f.close() #close our file
+        return reccount
+
+    # return number of records in database
+    def record_count( self ):
+        sql = "select count() from " + self.table
+        return int( self.select_rec( sql )[0][0] )
+
+    def insert_rec(self,sqlstr):
+        self.con = lite.connect(self.dbname)
+        self.cur = self.con.cursor()
+        self.cur.execute(sqlstr)
+        self.con.commit()
+        self.close_db()
+
+    def select_rec( self, sqlstr ):
+        self.con = lite.connect(self.dbname)
+        self.cur = self.con.cursor()
+        self.cur.execute(sqlstr)
+        r=self.cur.fetchall()
+        self.close_db()
+        return r
+
+    def close_db( self ):
+        if self.con:
+            self.con.close()
+
+    def defrag( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("VACUUM;")
+        self.close_db()
+
+    def excute(self,sqlstr):
+        self.con = lite.connect(self.dbname)
+        self.cur = self.con.cursor()
+        self.cur.execute(sqlstr)
+        self.con.commit()
+        self.close_db()
 
 class PhaseDB():
 
@@ -198,7 +370,7 @@ class PhaseDB():
         reccount = 0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " (TIMESTAMP, VERBR_L1_KW, VERBR_L2_KW, VERBR_L3_KW, GELVR_L1_KW, GELVR_L2_KW, GELVR_L3_KW, L1_V, L2_V, L3_V, L1_A, L2_A, L3_A) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,VERBR_L1_KW,VERBR_L2_KW,VERBR_L3_KW,GELVR_L1_KW,GELVR_L2_KW,GELVR_L3_KW,L1_V,L2_V,L3_V,L1_A,L2_A,L3_A) values ('" + \
             str(i[0]) + "'," +\
             str(i[1]) + "," +\
             str(i[2]) + "," +\
@@ -589,7 +761,7 @@ class WatermeterDB():
         #print filename
         self.con = lite.connect(self.dbname)
         self.cur = self.con.cursor()
-        self.cur.execute('select TIMESTAMP, PULS_PER_TIMEUNIT, VERBR_PER_TIMEUNIT, VERBR_IN_M3_TOTAAL from '+\
+        self.cur.execute('select TIMESTAMP,PULS_PER_TIMEUNIT,VERBR_PER_TIMEUNIT,VERBR_IN_M3_TOTAAL from '+\
         self.table +' order by TIMESTAMP')
         r=self.cur.fetchall()
         self.close_db() 
@@ -598,7 +770,7 @@ class WatermeterDB():
         reccount=0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " ( TIMESTAMP, PULS_PER_TIMEUNIT, VERBR_PER_TIMEUNIT, VERBR_IN_M3_TOTAAL) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,PULS_PER_TIMEUNIT,VERBR_PER_TIMEUNIT,VERBR_IN_M3_TOTAAL) values ('" + \
             str( i[0] ) + "','" +\
             str( i[1] ) + "','" +\
             str( i[2] ) + "','" +\
@@ -879,8 +1051,8 @@ class temperatureDB():
         reccount=0
         f = open(filename,"a")
         for i in r:
-        	line = "replace into " + self.table + " (TIMESTAMP, RECORD_ID, TEMPERATURE_1, TEMPERATURE_1_AVG, TEMPERATURE_1_MIN, TEMPERATURE_1_MAX,\
-        	TEMPERATURE_2, TEMPERATURE_2_AVG, TEMPERATURE_2_MIN, TEMPERATURE_2_MAX ) values ('" + \
+        	line = "replace into " + self.table + " (TIMESTAMP,RECORD_ID,TEMPERATURE_1,TEMPERATURE_1_AVG,TEMPERATURE_1_MIN,TEMPERATURE_1_MAX,\
+        	TEMPERATURE_2,TEMPERATURE_2_AVG,TEMPERATURE_2_MIN,TEMPERATURE_2_MAX) values ('" + \
         	str(i[0]) + "','" +\
         	str(i[1]) + "','" +\
         	str(i[2]) + "','" +\
@@ -1029,12 +1201,12 @@ class historyWeatherDB():
         f = open(filename,"a")
         for i in r:
             line = "replace into " + self.table + " (\
-TIMESTAMP, CITY_ID , CITY,\
-TEMPERATURE_MIN, TEMPERATURE_AVG, TEMPERATURE_MAX,\
-PRESSURE_MIN, PRESSURE_AVG, PRESSURE_MAX,\
-HUMIDITY_MIN, HUMIDITY_AVG, HUMIDITY_MAX,\
-WIND_SPEED_MIN, WIND_SPEED_AVG, WIND_SPEED_MAX,\
-WIND_DEGREE_MIN, WIND_DEGREE_AVG, WIND_DEGREE_MAX\
+TIMESTAMP,CITY_ID,CITY,\
+TEMPERATURE_MIN,TEMPERATURE_AVG,TEMPERATURE_MAX,\
+PRESSURE_MIN,PRESSURE_AVG,PRESSURE_MAX,\
+HUMIDITY_MIN,HUMIDITY_AVG,HUMIDITY_MAX,\
+WIND_SPEED_MIN,WIND_SPEED_AVG,WIND_SPEED_MAX,\
+WIND_DEGREE_MIN,WIND_DEGREE_AVG,WIND_DEGREE_MAX\
 ) values ('" + \
             str(i[0]) + "'," +\
             str(i[1]) + ",'" +\
@@ -1161,8 +1333,8 @@ class currentWeatherDB():
         reccount=0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " (TIMESTAMP, CITY_ID , CITY, TEMPERATURE, DESCRIPTION,\
-WEATHER_ICON, PRESSURE, HUMIDITY, WIND_SPEED, WIND_DEGREE, CLOUDS, WEATHER_ID) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,CITY_ID,CITY,TEMPERATURE,DESCRIPTION,\
+WEATHER_ICON,PRESSURE,HUMIDITY,WIND_SPEED,WIND_DEGREE,CLOUDS,WEATHER_ID) values ('" + \
             str(i[0]) + "','" +\
             str(i[1]) + "','" +\
             str(i[2]) + "','" +\
@@ -1315,6 +1487,7 @@ class configDB():
         
         self.insert_rec("insert or ignore into "+table+" values ( '58',''                      ,'Systeem ID')")
         self.insert_rec("insert or ignore into "+table+" values ( '59','1'                     ,'voorspelling in UI aan (1/0).')")
+
         # let op deze moet standaard op 1 staan om te voorkomen dat een gebruiker standaard bij gebruik van een inet
         # adres niet bij de config kan komen.
         self.insert_rec("insert or ignore into "+table+" values ( '60','1'                     ,'RFC1918 filtering aan/uit (1/0).')")
@@ -1400,18 +1573,21 @@ class configDB():
         self.insert_rec( "insert or ignore into " + table + " values ( '123','16'              ,'UI Amperage voor drie fase metingen (opties 16, 32 of 64).')")
         self.insert_rec( "insert or ignore into " + table + " values ( '124','4000'            ,'UI Watt voor drie fase metingen (opties 4000, 6000, 8000 of 1000).')" )
 
-        self.insert_rec("insert or ignore into "+table+" values ( '125','0'                     ,'KWh meter productie(S0) meting actief (0/1).')")
-        self.insert_rec("insert or ignore into "+table+" values ( '126','26'                    ,'ingestelde GPIO pin, voor het inlezen van KWh meter productie(S0) puls.')" )
-        self.insert_rec("insert or ignore into "+table+" values ( '127','0.0005'                ,'aantal kWh per KWh meter productie(S0) puls.')" )
+        self.insert_rec("insert or ignore into "+table+" values ( '125','0'                    ,'KWh meter productie(S0) meting actief (0/1).')")
+        self.insert_rec("insert or ignore into "+table+" values ( '126','26'                   ,'ingestelde GPIO pin, voor het inlezen van KWh meter productie(S0) puls.')" )
+        self.insert_rec("insert or ignore into "+table+" values ( '127','0.0005'               ,'aantal kWh per KWh meter productie(S0) puls.')" )
 
         self.insert_rec("replace into "+table+\
             " values ( '128','" + const.P1_PATCH_LEVEL + "'                                     ,'Software patch:')" )
 
         self.insert_rec("insert or ignore into "+table+" values ( '129','0'                     ,'UI KWh meter productie(S0) zichtbaar 1/0)')")
 
-        self.insert_rec("insert or ignore into "+table+" values ( '130','0'                     ,'aantal kWh op de meter hoog tarief')" )
-        self.insert_rec("insert or ignore into "+table+" values ( '131','0'                     ,'aantal kWh op de meter laag tarief')" )
-        self.insert_rec("insert or ignore into "+table+" values ( '132',''                      ,'aantal kWh meter timestamp.')" )
+        self.insert_rec("insert or ignore into " + table + " values ( '130','0'                 ,'aantal kWh op de meter hoog tarief')" )
+        self.insert_rec("insert or ignore into " + table + " values ( '131','0'                 ,'aantal kWh op de meter laag tarief')" )
+        self.insert_rec("insert or ignore into " + table + " values ( '132',''                  ,'aantal kWh meter timestamp.')" )
+
+        # opgelet deze regel is bewust een replace geen insert!
+        self.insert_rec("replace into " + table + " values ('133','" + const.P1_SERIAL_VERSION + "'               ,'Versie nummer:')" ) 
 
         self.close_db()
 
@@ -1427,7 +1603,7 @@ class configDB():
         reccount=0
         f = open(filename,"a")
         for i in r:
-        	line = "update " + self.table + " set PARAMETER='"+ str(i[1])+"', LABEL='"+str(i[2])+"' where ID='"+str(i[0])+"';"
+        	line = "update " + self.table + " set PARAMETER='"+ str(i[1])+"',LABEL='"+str(i[2])+"' where ID='"+str(i[0])+"';"
         	f.write(line+'\n')
         	reccount=reccount+1
         f.close() #close our file
@@ -1563,7 +1739,7 @@ class rtStatusDb():
         " values ( '21','0','Ramdisk gebruik.',0)")
 
         self.insert_rec("insert or ignore into "+table+\
-        " values ( '22','0','Besturingsysteem versie:',10)")
+        " values ( '22','0','Besturingssysteem versie:',10)")
 
         self.insert_rec("insert or ignore into "+table+\
         " values ( '23','onbekend','Internet bereikbaar op:',10)")
@@ -2021,9 +2197,9 @@ class SqlDb2():
         reccount=0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " (TIMESTAMP, VERBR_KWH_181, VERBR_KWH_182,\
-GELVR_KWH_281, GELVR_KWH_282, VERBR_KWH_X, GELVR_KWH_X,TARIEFCODE,ACT_VERBR_KW_170,\
-ACT_GELVR_KW_270, VERBR_GAS_2421) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,VERBR_KWH_181,VERBR_KWH_182,\
+GELVR_KWH_281,GELVR_KWH_282,VERBR_KWH_X,GELVR_KWH_X,TARIEFCODE,ACT_VERBR_KW_170,\
+ACT_GELVR_KW_270,VERBR_GAS_2421) values ('" + \
             str(i[0]) + "','" +\
             str(i[1]) + "','" +\
             str(i[2]) + "','" +\
@@ -2121,8 +2297,8 @@ class SqlDb3():
         reccount=0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " (TIMESTAMP, VERBR_KWH_181, VERBR_KWH_182,\
-GELVR_KWH_281, GELVR_KWH_282, VERBR_KWH_X, GELVR_KWH_X, TARIEFCODE, VERBR_GAS_2421, VERBR_GAS_X) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,VERBR_KWH_181,VERBR_KWH_182,\
+GELVR_KWH_281,GELVR_KWH_282,VERBR_KWH_X,GELVR_KWH_X,TARIEFCODE,VERBR_GAS_2421,VERBR_GAS_X) values ('" + \
             str(i[0]) + "','" +\
             str(i[1]) + "','" +\
             str(i[2]) + "','" +\
@@ -2218,8 +2394,8 @@ class SqlDb4():
         reccount=0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " (TIMESTAMP, VERBR_KWH_181, VERBR_KWH_182,\
-GELVR_KWH_281, GELVR_KWH_282, VERBR_KWH_X, GELVR_KWH_X, VERBR_GAS_2421, VERBR_GAS_X ) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,VERBR_KWH_181,VERBR_KWH_182,\
+GELVR_KWH_281,GELVR_KWH_282,VERBR_KWH_X,GELVR_KWH_X,VERBR_GAS_2421,VERBR_GAS_X) values ('" + \
             str(i[0]) + "','" +\
             str(i[1]) + "','" +\
             str(i[2]) + "','" +\
@@ -2315,7 +2491,7 @@ class financieelDb():
         reccount=0
         f = open(filename,"a")
         for i in r:
-            line = "replace into " + self.table + " (TIMESTAMP, VERBR_P, VERBR_D, GELVR_P, GELVR_D, GELVR_GAS ,VERBR_WATER ) values ('" + \
+            line = "replace into " + self.table + " (TIMESTAMP,VERBR_P,VERBR_D,GELVR_P,GELVR_D,GELVR_GAS,VERBR_WATER) values ('" + \
             str(i[0]) + "','" +\
             str(i[1]) + "','" +\
             str(i[2]) + "','" +\

@@ -197,10 +197,10 @@ def MainProg():
                     flog.info(inspect.stack()[0][3]+" Database wordt gewist")
                     if os.system('/p1mon/scripts/p1mon.sh cleardatabase') > 0:
                         flog.error(inspect.stack()[0][3]+" Database wordt gewist gefaald.")
-                if cmd == 'watermeter_gpio.p1mon':
-                    restartWatermeterProcess( 'GPIO pin reset' )
-                if cmd == 'watermeter_import_data.p1mon':
-                    restartWatermeterProcess( 'import van data' )
+                #if cmd == 'watermeter_gpio.p1mon':
+                #    restartWatermeterProcess( 'GPIO pin reset' )
+                #if cmd == 'watermeter_import_data.p1mon':
+                #    restartWatermeterProcess( 'import van data' )
                 if cmd == 'email_test.p1mon':
                     if os.system('/p1mon/scripts/P1SmtpCopy.py --testmail') > 0:
                         flog.error(inspect.stack()[0][3]+" Sturen van test email is gefaald.") 
@@ -210,6 +210,14 @@ def MainProg():
                         flog.error(inspect.stack()[0][3]+"reset van opgewekte energie meterstand(S0) gefaald.")
                     else:
                         flog.info(inspect.stack()[0][3]+ "reset van opgewekte energie meterstand(S0) gereed.")
+                if cmd == 'watermeter_counter_reset.p1mon':
+                    flog.info(inspect.stack()[0][3]+ "reset van opgewekte energie meterstand(S0) gestart.")
+                    if os.system('/p1mon/scripts/P1WatermeterV2CounterSet.py') > 0:
+                        flog.error(inspect.stack()[0][3]+"reset van watermeterstand gefaald.")
+                    else:
+                        flog.info(inspect.stack()[0][3]+ "reset van watermeterstand gereed.")
+
+
 
         # elke 10 sec acties
         if cnt%5 == 0:
@@ -231,6 +239,8 @@ def MainProg():
             checkAutoImport()
             ## check P1PowerProductionS0 run or stop
             checkPowerProductionS0()
+            ## checkWaterMeter run or stop
+            checkWaterMeter()
 
         # elke 60 sec acties
         if cnt%30 == 0:
@@ -383,6 +393,35 @@ def checkAutoImport():
         flog.error(inspect.stack()[0][3]+" Onverwachte fout: " + str( e ) )
     
     #flog.setLevel( logging.INFO )
+
+
+########################################################
+# checks if the watermeter script must run or must be  #
+# stopped                                              #
+########################################################
+def checkWaterMeter():
+    try:
+        prg_name = "P1WatermeterV2.py" 
+       
+        _id, run_status, _label = config_db.strget( 96, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug(inspect.stack()[0][3] + ": checkWaterMeterwant to run status is = " + str(run_status) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) == 1 and len( pid_list) == 0: # start process
+            flog.info(inspect.stack()[0][3] + ": " + prg_name + " wordt gestart." )
+            if os.system('/p1mon/scripts/' + prg_name + ' 2>&1 >/dev/null &') > 0:
+                flog.error(inspect.stack()[0][3] + prg_name + " start gefaald." )
+        #########################################################################
+        # fail save, the program self does also a check if it should be active. #
+        #########################################################################
+        if int(run_status) == 0 and len(pid_list) > 0: # stop process.
+            flog.info(inspect.stack()[0][3] + ": " + prg_name + " wordt gestopt." )
+            for pid in pid_list:
+                flog.info(inspect.stack()[0][3] + ": pid = " + str(pid) + " wordt gestopt. ")
+                os.kill( pid, signal.SIGINT ) # do a nice stop
+
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
 
 
 ########################################################
