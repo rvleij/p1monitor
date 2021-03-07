@@ -110,7 +110,7 @@ function readJsonApiHistoryDay( cnt ){
 }
 
 function readJsonApiWaterDay( cnt ){ 
-    $.getScript( "/api/v1/watermeter/month?limit=" + cnt, function( data, textStatus, jqxhr ) {
+    $.getScript( "/api/v2/watermeter/month?limit=" + cnt, function( data, textStatus, jqxhr ) {
       try {
         var jsondata = JSON.parse(data); 
         for( var j=0; j<jsondata.length; j++ ) {

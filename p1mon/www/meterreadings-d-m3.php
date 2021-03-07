@@ -68,14 +68,14 @@ function readJsonApiHistoryDay( cnt ){
 }
 
 function readJsonApiHistoryWaterDay( cnt ){ 
-    $.getScript( "/api/v1/watermeter/day", function( data, textStatus, jqxhr ) {
+    $.getScript( "/api/v2/watermeter/day", function( data, textStatus, jqxhr ) {
       try {
         var jsondata = JSON.parse(data); 
 
         for( var j=0; j<jsondata.length; j++ ) {
             for ( var n=0; n<consumptionWater.length; n++) {
                 if ( (jsondata[j][1] * 1000) == consumptionWater[n][0] ) {
-                    consumptionWater[n][1] = jsondata[j][4];
+                    consumptionWater[n][1] = jsondata[j][5];
                 }
             }
         }

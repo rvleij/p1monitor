@@ -11,8 +11,8 @@ from logger import logging,fileLogger
 from util import setFile2user
 
 # Get these from the developer dropbox site.
-APP_KEY      =''
-APP_SECRET   =''
+APP_KEY      ='sefdetwey2877wd'
+APP_SECRET   ='vd2blgf607pdx3x'
 
 prgname = 'P1DropBoxAuth'
 

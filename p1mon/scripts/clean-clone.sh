@@ -319,21 +319,28 @@ ACTIVE_DIR=$CLONE/root/.ssh
 if [ -d "$ACTIVE_DIR" ]; then
 	cd $ACTIVE_DIR 
 	PWD=$(pwd)
-	delete_from_dir * .*Store ._* 
+	delete_from_dir * .*Store ._*
 fi
 
 ACTIVE_DIR=$CLONE/root
 if [ -d "$ACTIVE_DIR" ]; then
-	cd $ACTIVE_DIR 
+	cd $ACTIVE_DIR
 	PWD=$(pwd)
 	delete_from_dir * .*Store .bash_history ._*
 fi
 
 ACTIVE_DIR=$CLONE/home/p1mon
 if [ -d "$ACTIVE_DIR" ]; then
-	cd $ACTIVE_DIR 
+	cd $ACTIVE_DIR
 	PWD=$(pwd)
 	delete_from_dir .*Store .bash_history ._*
+fi
+
+ACTIVE_DIR=$CLONE/home/p1mon/.cache
+if  [ -d "$ACTIVE_DIR" ]; then
+	cd $ACTIVE_DIR
+        PWD=$(pwd)
+        delete_from_dir *
 fi
 
 ACTIVE_DIR=$CLONE/var/cache/samba
@@ -441,6 +448,10 @@ rm  -r $DEV_FOLDER
 EDITOR=$CLONE/p1mon
 echo "=> verwijderden van editor cache files: $EDITOR"
 find $EDITOR -type f -name "._*" -delete 
+
+VARBACKUP=$CLONE/var/backups/*.gz
+echo "=> verwijderden van gzip files : $VARBACKUP"
+rm -f $VARBACKUP
 
 cd $CUR_DIR
 echo "=> unmounting $CLONE/boot"

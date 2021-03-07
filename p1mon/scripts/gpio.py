@@ -58,13 +58,13 @@ class gpioDigtalInput():
         # number of enteries wil be less then 4
 
         try:
-            _id, gpio_pin_value_85, _label  = self.config_db.strget(   85 , self.flog )
+            _id, gpio_pin_value_85, _label  = self.config_db.strget(   85 , self.flog )  # GPIO 27 Default pin
             check_set.add( gpio_pin_value_85 ) 
-            _id, gpio_pin_value_95, _label  = self.config_db.strget(   95 , self.flog )
+            _id, gpio_pin_value_95, _label  = self.config_db.strget(   95 , self.flog ) # GPIO 22 Default pin
             check_set.add( gpio_pin_value_95 ) 
-            _id, gpio_pin_value_97, _label  = self.config_db.strget(   97 , self.flog )
+            _id, gpio_pin_value_97, _label  = self.config_db.strget(   97 , self.flog ) # GPIO 17 Default pin
             check_set.add( gpio_pin_value_97 ) 
-            _id, gpio_pin_value_126, _label = self.config_db.strget( 126 , self.flog )
+            _id, gpio_pin_value_126, _label = self.config_db.strget( 126 , self.flog )  # GPIO 26 Default pin
             check_set.add( gpio_pin_value_126 ) 
 
             self.flog.debug( inspect.stack()[0][3] + ": gpio_pin_value_85=" + gpio_pin_value_85 + " gpio_pin_value_95="\

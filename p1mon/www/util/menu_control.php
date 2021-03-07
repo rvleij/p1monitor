@@ -1,6 +1,6 @@
 <?php
 function menu_control($id) {
-	$m1=$m1=$m2=$m3=$m4=$m5=$m6=$m7=$m8=$m9=$m10=$m11=$m12=$m13=$m14=$m15='';
+	$m1=$m1=$m2=$m3=$m4=$m5=$m6=$m7=$m8=$m9=$m10=$m11=$m12=$m13=$m14=$m15=$m16='';
 	
 	switch ($id) {
 		case 1: /* tarieven */
@@ -51,6 +51,9 @@ function menu_control($id) {
         case 15: /* power production config  */
             $m15= "menu-active-control";
             break;
+        case 16: /* watermeter config  */
+            $m16= "menu-active-control";
+            break;
 	}
 	
 	echo "<div><a href=\"config-tarief.php\"    class=\"text-14 $m1\"><i class=\"fas fa-euro-sign     fa-fw\"></i><span class=\"pad-6\">tarieven</span></a></div>"."\n";
@@ -80,6 +83,15 @@ function menu_control($id) {
         </span>
         <span class=\"pad-6\">kWh</span>
         </a></div>"."\n";
+
+    echo "<div><a href=\"config-water.php\" class=\"text-14 $m16\">
+        <span class=\"fa-layers fa-gw\">
+            <i class=\"fas fa-hand-holding-water\" data-fa-transform=\"shrink-0 left-0 up-0\"></i>
+        </span>
+        <span class=\"pad-6\">water</span>
+        </a></div>"."\n";
+
     echo "<div><a href=\"home.php\"             class=\"text-14\">     <i class=\"fas fa-sign-out-alt fa-fw\"></i><span class=\"pad-6\">exit</span></a></div>"."\n";
 }
 ?>
+

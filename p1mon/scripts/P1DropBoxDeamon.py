@@ -213,7 +213,7 @@ def Main(argv):
                     copySqlToDbx( dbx, const.FILE_DB_WEATHER_HISTORIE )
                     copySqlToDbx( dbx, const.FILE_DB_WEER_FILENAME  )
                     copySqlToDbx( dbx, const.FILE_DB_TEMPERATUUR_FILENAME  )
-                    copySqlToDbx( dbx, const.FILE_DB_WATERMETER )
+                    copySqlToDbx( dbx, const.FILE_DB_WATERMETERV2 )
                     copySqlToDbx( dbx, const.FILE_DB_PHASEINFORMATION )
                     copySqlToDbx( dbx, const.FILE_DB_POWERPRODUCTION )
 
@@ -345,7 +345,6 @@ def AuthenticateDropBox():
     flog.debug(inspect.stack()[0][3]+": access_token(encrypted) = "+ access_token_crypted)
     access_token = base64.standard_b64decode(crypto3.p1Decrypt( access_token_crypted, 'dbxkey' ))
     flog.debug(inspect.stack()[0][3]+": decrypted key = " + str(access_token))
-    
 
     try:
         dbx = dropbox.Dropbox( access_token.decode('utf-8') )

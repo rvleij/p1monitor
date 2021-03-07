@@ -79,6 +79,9 @@ function readJsonApiConfiguration(){
                     case 128:
                         $('#sy10v').text( jsonarr[j][1] );
                         $('#sy10t').text( jsonarr[j][2] );
+                    case 133:
+                        $('#sy11v').text(jsonarr[j][1]);
+                        $('#sy11t').text(jsonarr[j][2]);  
                     default:
                         break;
             }
@@ -175,14 +178,8 @@ function readJsonApiStatus(){
                         } catch(err) {}    
                         break;
                     case 22:
-                        if (jsonarr[j][1].length === 0) {
-                            hideStuff('sy2b');
-                            hideStuff('sy2t');
-                            hideStuff('sy2v');
-                        } else {
-                            $('#sy2v').text(jsonarr[j][1]);
-                            $('#sy2t').text(jsonarr[j][2]);
-                            }
+                        $('#sy2v').text(jsonarr[j][1]);
+                        $('#sy2t').text(jsonarr[j][2]);
                         break;
                     case 23:
                         if (jsonarr[j][1].length === 0) {
@@ -205,14 +202,8 @@ function readJsonApiStatus(){
                         }
                         break;
                     case 25:
-                        if (jsonarr[j][1].length === 0) {
-                            hideStuff('sy3b');
-                            hideStuff('sy3t');
-                            hideStuff('sy3v');
-                        } else {
-                            $('#sy3v').text(jsonarr[j][1]);
-                            $('#sy3t').text(jsonarr[j][2]);
-                        }
+                        $('#sy3v').text(jsonarr[j][1]);
+                        $('#sy3t').text(jsonarr[j][2]);
                         break;
                     case 26:
                         $('#ne2v').text(jsonarr[j][1]);
@@ -380,7 +371,7 @@ function readJsonApiStatus(){
                 case 109:
                     $('#db23v').text(jsonarr[j][1]);
                     $('#db23t').text(jsonarr[j][2]);
-                    break;
+                    break;  
                 default:
                     break;
             }
@@ -832,13 +823,19 @@ $(function () {
                  <br>
                      <div class="frame-2-top">
                     <span class="text-2">systeem</span>
+                    <div title="<?php strIdx( 98 );?>" class="pos-43">
+                        <button onclick="copyClipboard('systeem')" class="input-4 pos-31 cursor-pointer">
+                            <i class="color-menu fas fa-clipboard"></i>&nbsp;<span class="color-menu">clipboard</span>
+                        </button>
+                   </div>
                 </div>
-                  <div class="frame-2-bot">        
+                  <div id="systeem" class="frame-2-bot">
                     <div id="sy1t" class="text-9"></div><div id="sy1v" class="text-9"></div><br>
-                    <div id="sy2t" class="text-9"></div><div id="sy2v" class="text-9"></div><div><br id="sy2b"></div>
-                    <div id="sy3t" class="text-9"></div><div id="sy3v" class="text-9"></div><div><br id="sy3b"></div>
-                    <div id="sy4t" class="text-9"></div><div id="sy4v" class="text-9"></div><div><br id="sy4b"></div>
+                    <div id="sy2t" class="text-9"></div><div id="sy2v" class="text-9"></div><br>
+                    <div id="sy3t" class="text-9"></div><div id="sy3v" class="text-9"></div><br>
+                    <div id="sy4t" class="text-9"></div><div id="sy4v" class="text-9"></div><br>
                     <div id="sy10t" class="text-9"></div><div id="sy10v" class="text-9"></div><br>
+                    <div id="sy11t" class="text-9"></div><div id="sy11v" class="text-9"></div><br>
                     <div id="sy5t" class="text-9"></div><div id="sy5v" class="text-9"></div><br>
                     <div id="sy6t" class="text-9"></div><div id="sy6v" class="text-9"></div><br>
                     <div id="sy7t" class="text-9"></div><div id="sy7v" class="text-9"></div><br>
@@ -873,7 +870,6 @@ $(function () {
                   <div class="frame-2-bot">        
                      <div id="slimmemeter" class="text-9">
                      <br>
-                      
                     </div>
                  </div>
                  

@@ -103,60 +103,11 @@ def save( ):
                 writeStatus(  msg )
                 copyFile( name, const.DIR_UPGRADE_ASSIST_USB_MOUNT + const.DIR_UPGRADE_ASSIST_DATA, P1UAEXT )
 
-        """
-        # remove unprocessed records to prevent strange values after import. 
-        e_db_serial = SqlDb1()
-
-        #/p1mon/mnt/usb/p1monitor/data/e_serial.db.p1ua
-        #/p1mon/mnt/usb/p1monitor/data
-        #DIR_UPGRADE_ASSIST_USB_MOUNT + const.DIR_UPGRADE_ASSIST_DATA
-        #print ( const.DIR_UPGRADE_ASSIST_USB_MOUNT + const.DIR_UPGRADE_ASSIST_DATA + "/" + const.DB_SERIAL +  '.db' + P1UAEXT )
-
-        dbfile = const.DIR_UPGRADE_ASSIST_USB_MOUNT + const.DIR_UPGRADE_ASSIST_DATA + "/" + const.DB_SERIAL +  '.db' + P1UAEXT
-        # open van seriele database
-        try:
-            writeStatus( "verwijderen van nog niet verwerkte records uit " + const.DB_SERIAL_TAB )
-            e_db_serial.init( dbfile, const.DB_SERIAL_TAB )
-            rec_before_delete = e_db_serial.count()
-            sqlstr = "delete from e_serial where record_verwerkt = 0" #remove records that are not processed.
-            e_db_serial.del_rec( sqlstr )
-            number_of_records_removed = rec_before_delete - e_db_serial.count()
-            msg = "database tabel " + const.DB_SERIAL_TAB + " " + str(number_of_records_removed) + " nog niet verwerkte records verwijderd."
-            writeStatus( msg )
-            flog.info(inspect.stack()[0][3]+": " + msg )
-        except Exception as e:
-            flog.critical(inspect.stack()[0][3]+": database niet te openen(2)."+ dbfile + ") melding:"+str(e.args[0]))
-        """
-
-        """
-        # Hoeft niet meer omdat deze in de SQL export zit.
-        ##########################
-        # custom www folder copy #
-        ##########################
-        try:
-            id = "ua" # + str( getUtcTime() )
-            if os.system('sudo /p1mon/scripts/in_ex_custom_www.sh export ' + id ) > 0:
-                msg = " custom www export gefaald."
-                flog.error( inspect.stack()[0][3] + msg )
-                writeStatus( msg )
-            else:
-                msg = "custom www export succesvol."
-                flog.info ( inspect.stack()[0][3] + msg )
-                writeStatus( msg )
-                
-                print ( BACKUP_FILE + id + ".gz" )
-                copyFile( BACKUP_FILE + id + ".gz", const.DIR_UPGRADE_ASSIST_USB_MOUNT + const.DIR_UPGRADE_ASSIST_DATA, P1UAEXT )
-                isVerfiedRemoveOfFile ( BACKUP_FILE + id + ".gz" )
-                isVerfiedRemoveOfFile ( BACKUP_FILE + id + ".done" )
-        except Exception as e:
-            flog.critical(inspect.stack()[0][3]+": custom www export melding:" + str(e.args[0]) )
-        """
-
         ##########################
         # export van sql data    #
         ##########################
         try:
-            msg = "Start van SQL export dit duurt op en Pi3 ongeveer 10 a 15 seconden, geduld aub!"
+            msg = "Start van SQL export dit duurt op een Pi3 maximaal een paar minuten, geduld aub!"
             flog.info ( inspect.stack()[0][3] + msg )
             writeStatus( msg )
             exportfilename = const.DIR_VAR + const.EXPORT_PREFIX + "-" + const.P1_UPGRADE_ASSIST + ".zip"
@@ -180,6 +131,8 @@ def save( ):
         flog.info( msg )
         writeStatus( msg )
         msg = "Verwerking gereed."
+        writeStatus( msg )
+        msg = "Ga naar het systeem menu en stop de Rpi voor het vervangen van het SDHC kaartje."
         writeStatus( msg )
         sys.exit( 0 )
     else:
@@ -235,21 +188,7 @@ def restore():
                     flog.info( "Wifi bestand " + name + " is gewist." )
                     data_is_processed_flag =  True # we have processed some data and removed the file to prevent endless loop/reboot
 
-                """
-                print( "name" + name)
-                # print ( source )
-                if isVerfiedRemoveOfFile( name ) == True:
-                    # rename file
-                    # filename, _file_extension = os.path.splitext( source )
-                    # print ( filename )
-                    os.rename ( wifi_config_file + P1UAEXT, wifi_config_file )
-                    flog.info( "Wifi bestand " + wifi_config_file + P1UAEXT + " hernoemd." )  
-                    # set file rights
-                    subprocess.run( ['sudo', 'chmod', '0660' , wifi_config_file ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL )
-                    flog.info( "Wifi bestand " + wifi_config_file + " verwerkt" )
-                    data_is_processed_flag =  True # we have processed some data
-                """
-                
+
         except Exception as e:
             data_is_processed_flag = False
             flog.error( inspect.stack()[0][3] +  ": probleem met het verwerken van de wifi data: "  + str(e) )
@@ -301,23 +240,6 @@ def restore():
             flog.error( inspect.stack()[0][3] +  ": probleem met het verwerken van de database data: "  + str(e) )
             data_is_processed_flag = False
 
-        """
-        # Hoeft niet meer omdat deze nu in SQL export / import zit
-        try:
-            # process custom www data
-            for name in glob.glob( const.DIR_UPGRADE_ASSIST_USB_MOUNT + const.DIR_UPGRADE_ASSIST_DATA + "/custom-www-export-ua*.gz.p1ua" ):
-                #print ( "custom = " + name )
-                if os.system('sudo /p1mon/scripts/in_ex_custom_www.sh import ' + name ) > 0:
-                    msg = " custom www import gefaald."
-                    flog.error( inspect.stack()[0][3] + msg )
-                    writeStatus(  msg )
-                else:
-                    msg = "custom www import succesvol."
-                    flog.info ( inspect.stack()[0][3] + msg )
-                    writeStatus( msg )
-        except Exception as e:
-            flog.error( inspect.stack()[0][3] +  ": probleem met het verwerken van de custom www import data: "  + str(e) )
-        """
 
         umountUSB( usb_drive )
    

@@ -47,13 +47,13 @@ var showWatermeterInfo          = <?php if ( config_read( 102 ) == 1 ) { echo "t
 var phaseCategories             = [ 'L1', 'L2', 'L3' ]
 
 function readJsonApiWaterHistoryDay( cnt ){ 
-    $.getScript( "/api/v1/watermeter/day?limit=" + cnt, function( data, textStatus, jqxhr ) {
+    $.getScript( "/api/v2/watermeter/day?limit=" + cnt, function( data, textStatus, jqxhr ) {
       try {
         var jsondata = JSON.parse(data); 
         if ( jsondata.length == 0 ) {
             $('#verbruikWater').text( padXX( 0 ,5, 3 ) );
         } else {
-            $('#verbruikWater').text( padXX( jsondata[0][4] ,5, 3 ) );
+            $('#verbruikWater').text( padXX( jsondata[0][5] ,5, 3 ) );
             // day value 
             if ( jsondata[0][0]. substr( 0, 10 ) == moment().format('YYYY-MM-DD') ) {
                 $('#verbruikWaterDag').text( padXX( jsondata[0][3] ,8, 0 ) );

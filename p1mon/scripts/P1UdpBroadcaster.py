@@ -54,28 +54,32 @@ def Main(argv):
     last_json_timestamp = ''
     from_file = const.DIR_RAMDISK + const.API_BASIC_JSON_PREFIX + system_id + const.API_BASIC_JSON_SUFFIX
 
-    program_is_active = isProgramActive()
+    #program_is_active = isProgramActive()
 
     while True:
-
+        
+       
         if isProgramActive() == False: 
             sleep ( 10 )
             continue
 
         try:
-            with open(from_file, 'rb') as f:
-                file_data  = f.read()
-                jsondata = json.loads( file_data.decode('utf-8') )
             
-                if ( last_json_timestamp != jsondata['TIMESTAMP_lOCAL'] ):
-                    flog.debug(inspect.stack()[0][3]+": Data WEL verzonden timestamp json bestand is anders.")
-                    last_json_timestamp = jsondata['TIMESTAMP_lOCAL']
-                    udpsocket.sendto( file_data, host_address )
-                    # set timestamp last send message status database
-                    rt_status_db.timestamp(71,flog)
-                else:
-                    flog.debug(inspect.stack()[0][3]+": Data NIET verzonden timestamp json bestand is gelijk.")
-            
+            if os.path.isfile( from_file ):
+               
+                with open(  from_file, 'rb') as f:
+                    file_data  = f.read()
+                    jsondata = json.loads( file_data.decode('utf-8') )
+                    
+                    if ( last_json_timestamp != jsondata['TIMESTAMP_lOCAL'] ):
+                        flog.debug(inspect.stack()[0][3]+": Data WEL verzonden timestamp json bestand is anders.")
+                        last_json_timestamp = jsondata['TIMESTAMP_lOCAL']
+                        udpsocket.sendto( file_data, host_address )
+                        # set timestamp last send message status database
+                        rt_status_db.timestamp(71,flog)
+                    else:
+                        flog.debug(inspect.stack()[0][3]+": Data NIET verzonden timestamp json bestand is gelijk.")
+                    
         except Exception as e:
             flog.error(inspect.stack()[0][3]+": Fout melding:"+str(e.args[0]))
        

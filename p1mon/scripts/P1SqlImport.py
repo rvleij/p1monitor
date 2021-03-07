@@ -20,7 +20,7 @@ import systemid
 import time
 import crypto3
 
-from sqldb import configDB, SqlDb2, financieelDb, currentWeatherDB, historyWeatherDB, temperatureDB, WatermeterDB, PhaseDB, powerProductionDB
+from sqldb import configDB, SqlDb2, financieelDb, currentWeatherDB, historyWeatherDB, temperatureDB, WatermeterDB, PhaseDB, powerProductionDB, WatermeterDBV2
 from logger import fileLogger,logging
 from datetime import datetime, timedelta
 from semaphore3 import writeSemaphoreFile
@@ -38,10 +38,13 @@ weer_db               = currentWeatherDB()
 weer_history_db_uur   = historyWeatherDB()
 temperature_db        = temperatureDB()
 temperature_db        = temperatureDB()
+#V1 of the watermeter database, we keep supporting this for older software versions that import data
 watermeter_db_uur     = WatermeterDB()
 watermeter_db_dag     = WatermeterDB()
 watermeter_db_maand   = WatermeterDB()
 watermeter_db_jaar    = WatermeterDB()
+#V2 of the watermeter database
+watermeter_db         = WatermeterDBV2()
 fase_db               = PhaseDB()
 power_production_db   = powerProductionDB()
 
@@ -210,6 +213,15 @@ def Main(argv):
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_UUR_TAB + " succesvol geopend." )
 
+    # open van watermeter V2 database 
+    try:    
+        watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
+    except Exception as e:
+        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(20)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
+        sys.exit(1)
+    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
+
+
     # open van fase database      
     try:
         fase_db.init( const.FILE_DB_PHASEINFORMATION ,const.DB_FASE_REALTIME_TAB )
@@ -277,9 +289,25 @@ def Main(argv):
             print ( "02_temperatuur="  +str( tail.startswith( '02_temperatuur' ) ) )
             print ( "03_watermeter="  +str( tail.startswith( '03_watermeter' ) ) )
             """
-        
+
+            #if const.DB_WATERMETERV2  +"xxx" in fname:
+            if tail.startswith( const.DB_WATERMETERV2  ):
+                data = zf.read(fname).decode('utf-8')
+                content = data.split('\n')
+                flog.info(inspect.stack()[0][3]+": " + const.DB_WATERMETERV2 + " tabel bevat " + str(len(content)) + " import records." )
+                for sql in content:
+                    if len( sql.strip() ) > 0: #clear empty string
+                        # check if valid SQL
+                        if fnmatch.fnmatch(sql,'replace into watermeter*'):
+                            watermeter_db.insert_rec(sql)
+                            records_ok_cnt = records_ok_cnt + 1
+                        else:
+                            records_nok_cnt = records_nok_cnt + 1
+                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT WATERMETER = "+sql)       
+                        updateStatusFile( statusfile, records_ok_cnt, records_nok_cnt, 'bezig' , args ) 
+
             #if const.DB_WATERMETER  +"xxx" in fname:
-            if tail.startswith( const.DB_WATERMETER  ):
+            elif tail.startswith( const.DB_WATERMETER  ):
                 data = zf.read(fname).decode('utf-8')
                 content = data.split('\n')
                 flog.info(inspect.stack()[0][3]+": " + const.DB_WATERMETER+ " tabel bevat " + str(len(content)) + " import records." )
@@ -291,7 +319,7 @@ def Main(argv):
                             records_ok_cnt = records_ok_cnt + 1
                         else:
                             records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT TEMPERATUUR = "+sql)       
+                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT WATERMETER = "+sql)       
                         updateStatusFile( statusfile, records_ok_cnt, records_nok_cnt, 'bezig' , args ) 
 
             #if const.DB_TEMPERATURE +"xxx" in fname:
@@ -437,6 +465,10 @@ def Main(argv):
     flog.info(inspect.stack()[0][3]+": alle input verwerkt.")
     zf.close 
 
+    # waterbase V1 to V2 database conversion
+    #os.system("/p1mon/scripts/P1WatermeterDbV1toV2.py > /dev/null 2>&1")
+    os.system("/p1mon/scripts/P1WatermeterDbV1toV2.py")
+
     # lees systeem ID uit en zet deze in de config database. 
     # versleuteld om dat deze data in een back-up bestand terecht kan komen.
     try:  
@@ -468,7 +500,7 @@ def Main(argv):
     os.system("/p1mon/scripts/P1DbCopy.py --allcopy2disk --forcecopy")
 
     # reset watermeter to make sure the GPIO change is accepted.
-    writeSemaphoreFile( 'watermeter_import_data', flog )
+    # writeSemaphoreFile( 'watermeter_import_data', flog ) not needed in new version
 
     timestop = time.time()
     flog.info( inspect.stack()[0][3] + ": Gereed verwerkings tijd is " + f"{timestop - timestart:0.2f} seconden." ) 

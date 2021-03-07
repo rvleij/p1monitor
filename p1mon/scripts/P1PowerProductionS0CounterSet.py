@@ -76,6 +76,12 @@ def Main(argv):
 
     writeLineToStatusFile("Gestart")
 
+    # check if the database contains records.
+    if power_production_db.record_count() == 0: 
+        writeLineToStatusFile("database is leeg. Gestopt.")
+        flog.info("Stop van programma met process id " + str(os.getpid()))
+        sys.exit(0)
+
     _id, config_timestamp, _label       = config_db.strget( 132, flog )
     _id, config_high_metervalue, _label = config_db.strget( 130, flog )
     _id, config_low_metervalue, _label  = config_db.strget( 131, flog )

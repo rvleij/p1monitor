@@ -20,9 +20,17 @@
 # versie 202004-0.9.16 fase DB en ui toegevoegd.
 # versie 202009-0.9.18 aanzienlijke aanpassing aan de API om de IOS app te ondersteunen.
 # versie 202012-1.0.0 Versie met support voor S0 puls kWh meting.
+# Versie 1.1.0 Watermeter kan nu ook minuut waarden verwerken. 
 
-P1_VERSIE                       = "202012-1.0.0"
-P1_PATCH_LEVEL                  = "1"
+###########################################
+# onderstaande drie versie constanten bij #
+# elke release aanpassen                  #
+###########################################
+P1_VERSIE                       = "1.1.0"       # semantische versie nummers.
+P1_PATCH_LEVEL                  = "0"           # standaard op 0, wordt verhoogd als op een image een patch wordt uigevoerd.
+P1_SERIAL_VERSION               = "20210211"    # moet altijd gewijzigd worden bij een nieuwe versie
+
+
 #CRYPTO_SEED                     ="bee31cd96a3ce221"
 DEFAULT_EMAIL_NOTIFICATION      = 'P1 monitor notificatie'
 # NEW DB FILE NAMES START WITH A NUMBER THAT MUST BE UNIQUE 
@@ -53,6 +61,7 @@ DB_TEMPERATURE                  ="02_temperatuur"
 DB_WATERMETER                   ="03_watermeter"
 DB_PHASEINFORMATION             ="04_faseinformatie"
 DB_POWERPRODUCTION              ="05_powerproduction"
+DB_WATERMETERV2                 ="06_watermeter"
 DB_SERIAL_TAB                   ="e_serial"
 DB_HISTORIE_MIN_TAB             ="e_history_min"
 DB_HISTORIE_UUR_TAB             ="e_history_uur"
@@ -63,6 +72,7 @@ DB_WATERMETER_UUR_TAB           ="watermeter_history_uur"
 DB_WATERMETER_DAG_TAB           ="watermeter_history_dag"
 DB_WATERMETER_MAAND_TAB         ="watermeter_history_maand"
 DB_WATERMETER_JAAR_TAB          ="watermeter_history_jaar"
+DB_WATERMETERV2_TAB             ="watermeter"
 DB_FASE_REALTIME_TAB            ="faseinformatie"
 DB_STATUS_TAB                   ="status"    
 DB_CONFIG_TAB                   ="config"     
@@ -100,9 +110,10 @@ FILE_DB_POWERPRODUCTION         ="/p1mon/mnt/ramdisk/05_powerproduction.db"
 
 FILE_DB_PHASEINFORMATION        ="/p1mon/mnt/ramdisk/04_faseinformatie.db"
 FILE_DB_WATERMETER              ="/p1mon/mnt/ramdisk/03_watermeter.db"
-FILE_DB_E_FILENAME              ="/p1mon/mnt/ramdisk/e_serial.db"  
-FILE_DB_E_FILENAME              ="/p1mon/mnt/ramdisk/e_serial.db"  
-FILE_DB_E_HISTORIE              ="/p1mon/mnt/ramdisk/e_historie.db" 
+FILE_DB_WATERMETERV2            ="/p1mon/mnt/ramdisk/06_watermeter.db"
+FILE_DB_E_FILENAME              ="/p1mon/mnt/ramdisk/e_serial.db"
+FILE_DB_E_FILENAME              ="/p1mon/mnt/ramdisk/e_serial.db"
+FILE_DB_E_HISTORIE              ="/p1mon/mnt/ramdisk/e_historie.db"
 FILE_DB_CONFIG                  ="/p1mon/mnt/ramdisk/config.db"
 FILE_DB_STATUS                  ="/p1mon/mnt/ramdisk/status.db"
 FILE_DB_FINANCIEEL              ="/p1mon/mnt/ramdisk/financieel.db"
@@ -120,6 +131,7 @@ FILE_PREFIX_CUSTOM_UI           ="/p1mon/var/tmp/custom-www-export-"
 FILE_EXPORT_MANIFEST            ="/p1mon/var/tmp/manifest.json"
 FILE_UPGRADE_ASSIST_STATUS      ="/p1mon/mnt/ramdisk/upgrade-assist.status"
 FILE_POWERPRODUCTION_CNT_STATUS ="/p1mon/mnt/ramdisk/powerproduction-counter-reset.status"
+FILE_WATERMETER_CNT_STATUS      ="/p1mon/mnt/ramdisk/watermeter-counter-reset.status"
 TARIEF_VERBR_LAAG               ="0.20522"
 TARIEF_VERBR_HOOG               ="0.20522"
 TARIEF_GELVR_LAAG               ="0.20522"

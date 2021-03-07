@@ -7,7 +7,7 @@ import os
 import sys
 import time
 
-from sqldb import  rtStatusDb,configDB,SqlDb1,SqlDb2,SqlDb3,SqlDb4,financieelDb, WatermeterDB
+from sqldb import  rtStatusDb,configDB,SqlDb1,SqlDb2,SqlDb3,SqlDb4,financieelDb,WatermeterDBV2
 from logger import fileLogger,logging
 from util import fileExist, setFile2user, daysPerMonth,isMod, fileChanged, mkLocalTimeString, getUtcTime
 from datetime import datetime, timedelta
@@ -29,10 +29,12 @@ e_db_history_jaar     = SqlDb4()
 e_db_financieel_dag   = financieelDb()
 e_db_financieel_maand = financieelDb()
 e_db_financieel_jaar  = financieelDb()
-watermeter_db_uur     = WatermeterDB()
-watermeter_db_dag     = WatermeterDB()
-watermeter_db_maand   = WatermeterDB()
-watermeter_db_jaar    = WatermeterDB()
+watermeter_db         = WatermeterDBV2()
+
+#watermeter_db_uur     = WatermeterDB()
+#watermeter_db_dag     = WatermeterDB()
+#watermeter_db_maand   = WatermeterDB()
+#watermeter_db_jaar    = WatermeterDB()
 
 
 VERBR_KWH_181           = 0.0
@@ -150,35 +152,14 @@ def Main():
         flog.critical(inspect.stack()[0][3]+": database niet te openen(11)."+const.FILE_DB_FINANCIEEL+") melding:"+str(e.args[0]))
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_FINANCIEEL_JAAR_TAB+" succesvol geopend.")
-    
-     # open van watermeter databases
-    try:    
-        watermeter_db_uur.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
-    except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_UUR_TAB + " succesvol geopend." )
 
+    # open van watermeter database
     try:    
-        watermeter_db_dag.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_DAG_TAB , flog )
+        watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
+        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(3)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
         sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_DAG_TAB + " succesvol geopend." )
-
-    try:    
-        watermeter_db_maand.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_MAAND_TAB ,flog )
-    except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_MAAND_TAB + " succesvol geopend." )
-
-    try:    
-        watermeter_db_jaar.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_JAAR_TAB, flog )
-    except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_JAAR_TAB  + " succesvol geopend." )
+    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
 
     # defrag databases
     e_db_history_min.defrag()
@@ -581,11 +562,23 @@ def updateDbDayMoney():
     #flog.consoleOutputOn( True )
 
     try:
-        _puls_per_timeunit, verbr_per_timeunit, _verbr_in_m3_totaal = watermeter_db_uur.get_totals_record(timestamp_dag, 'day' )
-        if  verbr_per_timeunit == None:
+        verbr_per_timeunit = 0.0
+        sql = "select sum(VERBR_PER_TIMEUNIT) from " + const.DB_WATERMETERV2_TAB + " where TIMEPERIOD_ID=13 and timestamp = '" + timestamp_dag + " 00:00:00'"
+        #print ( "#0 = ", sql )
+
+        verbr_per_timeunit_tmp = watermeter_db.select_rec( sql )[0][0] 
+
+        if verbr_per_timeunit_tmp == None:
             verbr_per_timeunit = 0 # fix to prevent errors when water measuring is not used.
+        else:
+            verbr_per_timeunit = float( verbr_per_timeunit_tmp )
+
+        #print ( '#1 = ', verbr_per_timeunit )
+        #if  verbr_per_timeunit == None:
+        #    verbr_per_timeunit = 0 # fix to prevent errors when water measuring is not used.
+
         verbr_per_timeunit = verbr_per_timeunit/1000 # convert liter to m3 because cost is done per m3
-        flog.debug(inspect.stack()[0][3]+": liters water voor vandaag " + str(verbr_per_timeunit) )
+        flog.debug(inspect.stack()[0][3]+": liters water voor vandaag " + str( verbr_per_timeunit) )
     except Exception as e:
         flog.error( inspect.stack()[0][3]+": uren water verbruik error " + str(e) )
 
@@ -679,16 +672,16 @@ def setFileFlags():
     dummy,tail = os.path.split(const.FILE_DB_CONFIG)
     setFile2user(const.DIR_FILEDISK+tail,'p1mon')
     dummy,tail = os.path.split(const.FILE_DB_STATUS)
-    setFile2user(const.DIR_FILEDISK+tail,'p1mon') 
-    dummy,tail = os.path.split(const.FILE_DB_FINANCIEEL)   
     setFile2user(const.DIR_FILEDISK+tail,'p1mon')
-    dummy,tail = os.path.split(const.FILE_DB_WEATHER)   
-    setFile2user(const.DIR_FILEDISK+tail,'p1mon') 
-    dummy,tail = os.path.split(const.FILE_DB_WEATHER_HISTORIE)   
-    setFile2user(const.DIR_FILEDISK+tail,'p1mon') 
-    dummy,tail = os.path.split(const.FILE_DB_TEMPERATUUR_FILENAME)   
+    dummy,tail = os.path.split(const.FILE_DB_FINANCIEEL)
     setFile2user(const.DIR_FILEDISK+tail,'p1mon')
-    dummy,tail = os.path.split(const.FILE_DB_WATERMETER)
+    dummy,tail = os.path.split(const.FILE_DB_WEATHER)
+    setFile2user(const.DIR_FILEDISK+tail,'p1mon')
+    dummy,tail = os.path.split(const.FILE_DB_WEATHER_HISTORIE)
+    setFile2user(const.DIR_FILEDISK+tail,'p1mon') 
+    dummy,tail = os.path.split(const.FILE_DB_TEMPERATUUR_FILENAME)
+    setFile2user(const.DIR_FILEDISK+tail,'p1mon')
+    dummy,tail = os.path.split( const.FILE_DB_WATERMETERV2 )
     setFile2user(const.DIR_FILEDISK+tail,'p1mon')
     
 def cleanDb():

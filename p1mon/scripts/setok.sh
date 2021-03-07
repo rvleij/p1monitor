@@ -35,4 +35,6 @@ echo "[*] opschonen oude packages"
 # clean is beter dan autoclean.
 apt-get clean 
 apt-get autoremove -y
+echo "[*] clean van /var/backups/*.gz"
+rm -f /var/backups/*.gz
 echo "[*] gereed"

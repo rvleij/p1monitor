@@ -44,7 +44,7 @@ var GnettoData      = [];
 var maxrecords      = 744;
 
 function readJsonApiHistoryHour( cnt ){ 
-    $.getScript( "/api/v1/watermeter/hour?limit=" + cnt, function( data, textStatus, jqxhr ) {
+    $.getScript( "/api/v2/watermeter/hour?limit=" + cnt, function( data, textStatus, jqxhr ) {
       try {
         var jsondata = JSON.parse(data); 
         var item;
@@ -54,7 +54,7 @@ function readJsonApiHistoryHour( cnt ){
         for (var j = jsondata.length; j > 0; j--){    
             item    = jsondata[ j-1 ];
             item[1] = item[1] * 1000; // highchart likes millisecs.
-            GverbrData.push ( [item[1], item[3] ]);
+            GverbrData.push ( [item[1], item[4] ]);
         }  
         updateData();
       } catch(err) {}

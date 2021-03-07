@@ -34,7 +34,7 @@ config_db               = configDB()
 power_production_db     = powerProductionDB()
 gpioPowerS0Puls         = gpioDigtalInput()
 timestamp               = mkLocalTimeString() 
-timestamp_buffer_list   = []
+#timestamp_buffer_list   = []
 prg_is_active           = True
 S0_POWERSOURCE          = 1
 mp_queue_1              = Queue()
@@ -90,6 +90,7 @@ def Main(argv):
     # one time message for log
     #if prgIsActive(flog) == False:
     #    flog.info(inspect.stack()[0][3]+": programma is niet als actief geconfigureerd , wordt niet uitgevoerd.")
+
 
     startBackgroundDeamon()
 
@@ -188,7 +189,6 @@ def replaceRecordForAPeriod( timestamp, period ):
     except Exception as e:
         flog.warning( inspect.stack()[0][3]+": sql error voor timestamp  " + timestamp +  " -> " + str(e) )
 
-
 ########################################################
 # make remove / delete records from database           #
 # ######################################################
@@ -239,37 +239,46 @@ def deleteRecords():
 ########################################################
 def checkAndInsertMinuteRecord():
     dt = datetime.now()
+    timestamp = datetime.strftime( dt , "%Y-%m-%d %H:%M:00")
+
+    #print ("# " + str( dt.second  ) )
     try:
-        if dt.second == 0:
-            #if prgIsActive( flog ) == True:
-                flog.debug( inspect.stack()[0][3]+": leeg record aanmaken om een data gap te voorkomen." )
-                timetamp_minus_one_minute = datetime.strftime( dt - timedelta( minutes=1 ), "%Y-%m-%d %H:%M:00")
-                #print (" timetamp_minus_one_minute = " + str(timetamp_minus_one_minute) )
-                rec = power_production_db.get_timestamp_record( timetamp_minus_one_minute, sqldb.INDEX_MINUTE, S0_POWERSOURCE )
-                #print (" record minus one = " + str(rec) )
-                if rec != None:
-                    timestamp = datetime.strftime( dt , "%Y-%m-%d %H:%M:00")
-                    sql = "insert into " + const.DB_POWERPRODUCTION_TAB + " (TIMESTAMP, TIMEPERIOD_ID, POWER_SOURCE_ID, PRODUCTION_KWH_HIGH_TOTAL, PRODUCTION_KWH_LOW_TOTAL, PRODUCTION_KWH_TOTAL ) values ('" + timestamp + "'," + str(sqldb.INDEX_MINUTE) + "," + str(S0_POWERSOURCE) + "," + str(rec[7]) + "," + str(rec[8]) + "," + str(rec[9]) + ")"
+        if dt.second > 30: #limit the work load
+            
+            flog.debug( inspect.stack()[0][3]+": leeg record aanmaken om een data gap te voorkomen." )
+            timetamp_minus_one_minute = datetime.strftime( dt - timedelta( minutes=1 ), "%Y-%m-%d %H:%M:00")
+            #print (" timetamp_minus_one_minute = " + str(timetamp_minus_one_minute) )
+            rec = power_production_db.get_timestamp_record( timetamp_minus_one_minute, sqldb.INDEX_MINUTE, S0_POWERSOURCE )
+            #print (" record minus one = " + str(rec) )
 
-                    # check if there is no record 
-                    rec_exist = power_production_db.get_timestamp_record( timestamp, sqldb.INDEX_MINUTE, S0_POWERSOURCE )
-                    if rec_exist == None:
-                        #print ( "sql insert = " + sql )
-                        power_production_db.excute( sql )
+            if rec != None:
+                #timestamp = datetime.strftime( dt , "%Y-%m-%d %H:%M:00")
+                sql = "insert into " + const.DB_POWERPRODUCTION_TAB + " (TIMESTAMP, TIMEPERIOD_ID, POWER_SOURCE_ID, PRODUCTION_KWH_HIGH_TOTAL, PRODUCTION_KWH_LOW_TOTAL, PRODUCTION_KWH_TOTAL )\
+                     values ('" + timestamp + "'," + str(sqldb.INDEX_MINUTE) + "," + str(S0_POWERSOURCE) + "," + str(rec[7]) + "," + str(rec[8]) + "," + str(rec[9]) + ")"
 
-                    #rec_test = power_production_db.get_timestamp_record( timestamp, sqldb.INDEX_MINUTE, S0_POWERSOURCE )
-                    #print ( "sql check = " + str(rec_test) )
+                #print ( sql )
 
-                    replaceRecordForAPeriod( timestamp, sqldb.INDEX_HOUR )
-                    replaceRecordForAPeriod( timestamp, sqldb.INDEX_DAY )
-                    replaceRecordForAPeriod( timestamp, sqldb.INDEX_MONTH )
-                    replaceRecordForAPeriod( timestamp, sqldb.INDEX_YEAR )
+                # check if there is no record 
+                rec_exist = power_production_db.get_timestamp_record( timestamp, sqldb.INDEX_MINUTE, S0_POWERSOURCE )
+                if rec_exist == None:
+                    #print ( "sql insert = " + sql )
+                    power_production_db.excute( sql )
+
+                #rec_test = power_production_db.get_timestamp_record( timestamp, sqldb.INDEX_MINUTE, S0_POWERSOURCE )
+                #print ( "sql check = " + str(rec_test) )
+
+                #print ("# update. power "+timestamp)
+
+                replaceRecordForAPeriod( timestamp, sqldb.INDEX_HOUR )
+                replaceRecordForAPeriod( timestamp, sqldb.INDEX_DAY )
+                replaceRecordForAPeriod( timestamp, sqldb.INDEX_MONTH )
+                replaceRecordForAPeriod( timestamp, sqldb.INDEX_YEAR )
 
                 # clean the database
                 deleteRecords()
 
-                # check if there are any gaps in the database records
-                mp_queue_1.put( QUEUE_CMD_START )
+            # check if there are any gaps in the database records
+            mp_queue_1.put( QUEUE_CMD_START )
 
     except Exception as e:
         flog.warning( inspect.stack()[0][3]+": sql insert error voor timestamp  " + timestamp +  " -> " + str(e) )
@@ -288,7 +297,7 @@ def backgroundDaemon():
             if item == QUEUE_CMD_START:
                 flog.debug ( inspect.stack()[0][3] + " queue lengte verminderd met 1, aantal entries = " + str( mp_queue_1.qsize()) )
                 addMissingRecords()
-
+                
             # remove older request from queue to prevent overload.
             while mp_queue_1.qsize() > 0:
                 mp_queue_1.get_nowait() 
@@ -314,6 +323,7 @@ def startBackgroundDeamon():
 # ######################################################
 def addMissingRecords():
 
+    #print("# addMissingRecords()") 
     missing_records_count   = 0
     max_timestamp           = ""
     min_timestamp           = ""
@@ -329,7 +339,7 @@ def addMissingRecords():
 
         sql = " ".join ( sql.split() )
         rec = power_production_db.select_rec( sql )
-        missing_records_count   = rec[0][0] # number of minute records missing in the database 
+        missing_records_count   = rec[0][0] # number of minute records missing in the database.
         max_timestamp           = rec[0][1] # most current timestamp.
         min_timestamp           = rec[0][2] # oldest timestamp.
         #print ( sql )
@@ -424,6 +434,7 @@ def addMissingRecords():
                     + str(rec[7]) + "," + str(rec[8]) + "," + str(rec[7]+rec[8]) + ")"
                 
                 power_production_db.excute( sql )
+                
 
         except Exception as e:
                 flog.warning( inspect.stack()[0][3]+": sql insert error op table " + const.DB_POWERPRODUCTION_TAB + " ->" + str(e) )
@@ -474,6 +485,8 @@ def minuteProcessing( timestamp, tariff, puls_value_per_kwh ):
     rec_values['POWER_SOURCE_ID']       = S0_POWERSOURCE
     rec_values['PRODUCTION_KWH_TOTAL']  = 0
     rec_values['PRODUCTION_PSEUDO_KW']  = 0
+
+    
 
     if ( tariff == 'P' ):
         rec_values['PRODUCTION_KWH_HIGH']       = float(puls_value_per_kwh)
@@ -534,15 +547,20 @@ def minuteProcessing( timestamp, tariff, puls_value_per_kwh ):
         except Exception as e:
             flog.error( inspect.stack()[0][3]+": sql error(1) op table " + const.DB_POWERPRODUCTION_TAB + " ->" + str(e) )
 
+
     #print( rec_values )
     rec_values['PRODUCTION_KWH_TOTAL'] = rec_values['PRODUCTION_KWH_HIGH_TOTAL'] + rec_values['PRODUCTION_KWH_LOW_TOTAL']
 
     # calculate peseudo kilo watt, devide by 3600 to get the second value
     # format ( m3_val, '.4f' )
     if ( tariff == 'P' ):
-        rec_values['PRODUCTION_PSEUDO_KW'] = rec_values['PRODUCTION_KWH_HIGH'] / 3600 
+        rec_values['PRODUCTION_PSEUDO_KW'] = rec_values['PRODUCTION_KWH_HIGH']
     else:
-        rec_values['PRODUCTION_PSEUDO_KW'] = rec_values['PRODUCTION_KWH_LOW'] / 3600 
+        rec_values['PRODUCTION_PSEUDO_KW'] = rec_values['PRODUCTION_KWH_LOW']  
+
+    # limit number of digits te ease processing. 
+    # and convert to Watt
+    rec_values['PRODUCTION_PSEUDO_KW'] =  format( rec_values['PRODUCTION_PSEUDO_KW'] * 16.66, '.6f' ) 
 
     power_production_db.replace_rec_with_values( rec_values, sqldb.INDEX_MINUTE, S0_POWERSOURCE )
 
@@ -552,7 +570,7 @@ def minuteProcessing( timestamp, tariff, puls_value_per_kwh ):
 def waitForPuls():
     global gpioPowerS0Puls
     
-    #if pulsSimulator( probility = 0.0005 ) == True:
+    #if pulsSimulator( probility = 0.05 ) == True:
     if gpioPowerS0Puls.gpioWaitRead() == True:
         flog.debug(inspect.stack()[0][3]+": Start van verwerken van S0 pulsen, verwerking is actief.")
 
@@ -562,13 +580,13 @@ def waitForPuls():
         #flog.debug( inspect.stack()[0][3]+": S0 puls gedetecteerd." )
         _id, puls_value_per_kwh, _label = config_db.strget( 127, flog )
         #puls_value_per_kwh = 1 #debug
-        
+         
         # get HIGH of LOW tariff P or D
         _id, tariff, _label, _security = rt_status_db.strget( 85, flog )
         #tariff = 'P'
 
         #store in buffer database and proces.
-        timestamp_buffer_list.append( [timestamp, puls_value_per_kwh,tariff ])
+        #timestamp_buffer_list.append( [timestamp, puls_value_per_kwh,tariff ])
 
         # process minute records
         minuteProcessing( timestamp, tariff, puls_value_per_kwh )
@@ -594,25 +612,6 @@ def pulsSimulator(probility = 0.2 ):
     else:
         return False
 
-"""
-def prgIsActive( flog ):
-    global prg_is_active
-
-    _config_id, status, _text = config_db.strget( 125 ,flog )
-    if status == "0":
-        if  prg_is_active == True:
-            flog.info(inspect.stack()[0][3]+": programma is niet als actief geconfigureerd.")
-        prg_is_active = False
-        flog.debug(inspect.stack()[0][3]+": programma is niet als actief geconfigureerd, pauzeer")
-        sleep( 10 ) # wait 10 sec to try again
-        return False
-    else:
-        if prg_is_active == False:
-                flog.info(inspect.stack()[0][3]+": programma is geactiveerd.")
-        prg_is_active = True
-        return True
-"""
-
 ########################################################
 # copy to (flash)disk forced                           #
 ########################################################
@@ -625,7 +624,8 @@ def backupData():
 # exist.                                               #
 ########################################################
 def DiskRestore():
-   os.system("/p1mon/scripts/P1DbCopy.py --allcopy2ram")
+   #os.system("/p1mon/scripts/P1DbCopy.py --allcopy2ram")
+   os.system("/p1mon/scripts/P1DbCopy.py --powerproduction2ram")
 
 def saveExit(signum, frame):
     flog.info(inspect.stack()[0][3]+" SIGINT ontvangen, gestopt.")

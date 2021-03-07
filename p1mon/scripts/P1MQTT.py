@@ -14,7 +14,7 @@ import os
 import paho.mqtt.client as mqtt
 from datetime import datetime
 
-from sqldb import configDB, rtStatusDb, SqlDb1, WatermeterDB, currentWeatherDB, temperatureDB
+from sqldb import configDB, rtStatusDb, SqlDb1, WatermeterDBV2, currentWeatherDB, temperatureDB
 from logger import fileLogger, logging
 from util import setFile2user, getUtcTime
 #from makeLocalTimeString import makeLocalTimeString
@@ -27,7 +27,7 @@ prgname             = 'P1MQTT'
 config_db           = configDB()
 rt_status_db        = rtStatusDb()
 e_db_serial         = SqlDb1()
-watermeter_db_uur   = WatermeterDB()
+watermeter_db       = WatermeterDBV2()
 weer_db             = currentWeatherDB()
 temperature_db      = temperatureDB()
 
@@ -238,11 +238,11 @@ def setConfigFromDb():
     }   
 
     mqtt_topics_watermeter = {
-        0: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/hour'.lower()  + '/' + apiconst.JSON_TS_LCL.lower(),
-        1: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/hour'.lower()  + '/' + apiconst.JSON_TS_LCL_UTC.lower(),
-        2: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/hour'.lower()  + '/' + apiconst.JSON_API_WM_PULS_CNT.lower(),
-        3: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/hour'.lower()  + '/' + apiconst.JSON_API_WM_CNSMPTN_LTR.lower(),
-        4: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/hour'.lower()  + '/' + apiconst.JSON_API_WM_CNSMPTN_LTR_M3.lower()
+        0: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/minute'.lower()  + '/' + apiconst.JSON_TS_LCL.lower(),
+        1: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/minute'.lower()  + '/' + apiconst.JSON_TS_LCL_UTC.lower(),
+        2: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/minute'.lower()  + '/' + apiconst.JSON_API_WM_PULS_CNT.lower(),
+        3: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/minute'.lower()  + '/' + apiconst.JSON_API_WM_CNSMPTN_LTR.lower(),
+        4: mqtt_para['topicprefix'] + '/' + apiconst.BASE_WATERMETER + '/minute'.lower()  + '/' + apiconst.JSON_API_WM_CNSMPTN_LTR_M3.lower()
     }
 
     mqtt_topics_weather = {
@@ -334,6 +334,16 @@ def Main(argv):
         sys.exit(1)
     flog.info( inspect.stack()[0][3] + ": database tabel "+const.DB_SERIAL_TAB+" succesvol geopend." )
 
+
+    # open van watermeter database
+    try:    
+        watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
+    except Exception as e:
+        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(3)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
+        sys.exit(1)
+    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
+
+    """
     # open van watermeter databases
     try:    
         watermeter_db_uur.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
@@ -341,6 +351,7 @@ def Main(argv):
         flog.critical( inspect.stack()[0][3] + ": Database niet te openen(4)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
         sys.exit(1)
     flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETER_UUR_TAB + " succesvol geopend." )
+    """
 
      # open van weer database voor huidige weer
     try:
@@ -441,7 +452,7 @@ def Main(argv):
                 if mqtt_para['watermeterpublishisactive'] == True:  #is active
                     _id, timestamp, _label, _security = rt_status_db.strget( 90, flog )
                     if ( mqtt_para['watermeterprocessedtimestamp'] ) != timestamp:
-                        getPayloadFromDB( mqtt_payload_watermeter, watermeter_db_uur )
+                        getPayloadFromDB( mqtt_payload_watermeter, watermeter_db )
                         if len( mqtt_payload_watermeter[0] ) > 0: # only send when when we have data
                             mqttPublish( mqtt_client, mqtt_topics_watermeter,  mqtt_payload_watermeter )
                             mqtt_para['watermeterprocessedtimestamp'] = timestamp
@@ -489,8 +500,6 @@ def Main(argv):
 
             except Exception as e:
                 flog.warning(inspect.stack()[0][3]+": onverwachte fout bij binnen temperatuur publish van melding:"+str(e))  
-        
-
 
         flog.debug( inspect.stack()[0][3] + ": sleeping... mqtt_para['brokerconnectionisok'] = "  +  str(mqtt_para['brokerconnectionisok']) )
 
@@ -660,7 +669,6 @@ def getPhasePayloadFromDB( mqtt_payload ):
     _id, mqtt_payload[ 13 ], _label, _security = rt_status_db.strget( 102, flog) #L1 Ampere
     #print  (mqtt_payload )
 
-
 def getPayloadFromDB( mqtt_payload, database ):
     try:
         rec = database.select_one_record()
@@ -701,7 +709,7 @@ if __name__ == "__main__":
     try:
         logfile = const.DIR_FILELOG + prgname + ".log" 
         setFile2user( logfile,'p1mon' )
-        flog = fileLogger( logfile,prgname )    
+        flog = fileLogger( logfile,prgname )
         #### aanpassen bij productie
         flog.setLevel( logging.INFO )
         flog.consoleOutputOn( True )
