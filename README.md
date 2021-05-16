@@ -18,7 +18,7 @@ I run the container using the following run command:
 
     docker run -d -p 80:80 -p 10721:10721 -p 40721:40721 --name="p1mon" \
     -h p1mon --cap-add=SYS_NICE \
-    --tmpfs /tmp --tmpfs /run --tmpfs /p1mon/mnt/ramdisk \
+    --tmpfs /tmp --tmpfs /run -v /<insert local path>/p1mon/ramdisk:/p1mon/mnt/ramdisk:rw \
     -v /<insert local path>/p1mon/data:/p1mon/data:rw -v /<insert local path>/p1mon/usbdisk:/p1mon/mnt/usb:rw \
     -v /etc/localtime:/etc/localtime:ro \
     --device=/dev/<your USB device> \
