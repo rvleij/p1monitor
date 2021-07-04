@@ -1,21 +1,21 @@
 #!/usr/bin/python3
 import argparse
 import sys
-import glob
-import zlib
+#import glob
+#import zlib
 import const
 import inspect
 import signal
 import zipfile
 import fnmatch
 import datetime
-import getopt
+#import getopt
 import json
 import os
 import pwd
-import shutil
+#import shutil
 import subprocess
-import semaphore3
+#import semaphore3
 import systemid
 import time
 import crypto3
@@ -23,9 +23,11 @@ import crypto3
 from sqldb import configDB, SqlDb2, financieelDb, currentWeatherDB, historyWeatherDB, temperatureDB, WatermeterDB, PhaseDB, powerProductionDB, WatermeterDBV2
 from logger import fileLogger,logging
 from datetime import datetime, timedelta
-from semaphore3 import writeSemaphoreFile
-from os import umask
-#from shutil import 
+#from semaphore3 import writeSemaphoreFile
+from util import setFile2user
+#from os import umask
+#from shutil import
+from listOfPidByName import listOfPidByName
 
 prgname = 'P1SqlImport'
 
@@ -47,153 +49,533 @@ watermeter_db_jaar    = WatermeterDB()
 watermeter_db         = WatermeterDBV2()
 fase_db               = PhaseDB()
 power_production_db   = powerProductionDB()
+no_status_messages    = False   # dont write to the status file. 
 
 statusdata = {
-   'status_text'           : 'onbekend',
    'records_processed_ok'  :  0,
    'records_processed_nok' :  0,
-   'records_total'         :  0,
-   'export_timestamp'      :  0
+   'records_total'         :  0
 }
 
-#def updateRecordsProcessedOk(filename, cnt):
-#    statusdata['records_processed_ok'] = cnt
-#    writeStatusFile(filename)
-#    #time.sleep(0.3) #debug
+def Main(argv):
+
+    global no_status_messages
     
-#def updateRecordsProcessedNok(filename, cnt):
-#    statusdata['records_processed_nok'] = cnt
-#    writeStatusFile(filename)
-#    #time.sleep(0.3) #debug    
+    my_pid = os.getpid()
+    flog.info("Start van programma met process id " + str(my_pid) )
+    pid_list, _process_list = listOfPidByName( prgname )
+    #print ( pid_list )
+    pid_list.remove( my_pid ) # remove own pid from the count
+    flog.debug( inspect.stack()[0][3] + ": pid list clean (andere lopende proces id's) " + str(pid_list ) )
+    if len( pid_list ) > 0: # more then 1 because the script is started from os.system()
+        msg_str = "Gestopt een andere versie van het programma is actief."
+        flog.info( inspect.stack()[0][3] + ": " + msg_str )
+        sys.exit(1)
 
+    timestart = time.time() # used te calculate the processing time.
 
-def updateStatusFile(filename, processed_ok, processed_nok, status_text , args):
-   
-    if args.rmstatus == True: # no status file requested, do noting
-      return
-
-    fo = open( filename, "w" )
-    statusdata['records_processed_ok']  = processed_ok
-    statusdata['records_processed_nok'] = processed_nok
-    statusdata['status_text']           = status_text
-    fo.write(json.dumps( statusdata ))
-    fo.close()
-    flog.debug (inspect.stack()[0][3]+": records_processed_ok = "+ str(statusdata['records_processed_ok']) )
+    flog.info( inspect.stack()[0][3] +  ": Wordt uitgevoerd als user -> " + pwd.getpwuid( os.getuid() ).pw_name  )
     
-def Main(argv):             
-    flog.info("Start van programma.")
-    flog.info(inspect.stack()[0][3]+": wordt uitgevoerd als user -> "+pwd.getpwuid( os.getuid() ).pw_name)
-
-    timestart = time.time()
-    #timestamp = mkLocalTimestamp()
-
-    importfile = ''
-    global statusfile
-
     parser = argparse.ArgumentParser( description = prgname )
-    parser.add_argument( '-i' , '--importfile', help="Naam van het export bestand om te importeren.",     required=True  ) 
+    parser.add_argument( '-i' , '--importfile', help="Naam van het export bestand om te importeren.",     required=False  ) 
     parser.add_argument( '-rm', '--rmstatus',   help="Maak geen status bestand aan", action='store_true', required=False ) 
 
-    """
-    try:
-        opts, _args = getopt.getopt(argv,"hi:",["importfile="])
-    except getopt.GetoptError:
-        print ( prgname+'.py -i <importfile>' )
-        sys.exit(2)
-
-    for opt, arg in opts:
-        if opt == '-h':
-            print ( prgname+'.py -i <importfile>' )
-            sys.exit()
-        elif opt in ("-i", "--importfile"):
-            importfile = arg
-    """
     args = parser.parse_args()
+    no_status_messages = args.rmstatus # default False when set True
+
+
+    initStatusFile()
+
+    # open van config database
+    try: 
+        config_db.init( const.FILE_DB_CONFIG,const.DB_CONFIG_TAB )
+    except Exception as e:
+        msg = ": database niet te openen ("+ const.FILE_DB_CONFIG + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        stop( 2 ) 
+    
+    msg =  "database " + const.DB_CONFIG + " succesvol geopend."
+    writeLineToStatusFile( msg )
+
+    try:
+        # update field from database, the cli switches overwrite the DB values!
+        _id, importfile, _label = config_db.strget( 138,flog )
+    except Exception as e:
+        msg = "fout met lezen van import bestand uit database -> " + str(e) 
+        writeLineToStatusFile( msg )
+        flog.error(inspect.stack()[0][3]+": " + msg )
+        stop( 2 ) 
+        
+    # check must be done after DB read of import filename
     if args.importfile != None:
         importfile = args.importfile
 
     if importfile == '':
-        print ( prgname+'.py -i <importfile>' )
-        flog.error("gestopt importfile ontbreekt.")
-        sys.exit(2)
+        msg = "gestopt importfile ontbreekt."
+        writeLineToStatusFile( msg )
+        flog.error( inspect.stack()[0][3]+": " + msg )
+        stop( 2 ) 
 
-    #updateStatusFile( '/p1mon/mnt/ramdisk/test1.txt', 0, 0, 'bezig', args )
-    #time.sleep(10)
-    #sys.exit()
-
-    #print 'importfile ', importfile
-    #return
-    flog.info(inspect.stack()[0][3]+": import bestand = "+importfile)
-
-    _head,tail = os.path.split(importfile) 
-   
-    statusfile  = const.DIR_RAMDISK + tail + ".status"
-    flog.info( inspect.stack()[0][3]+": status bestand = " + statusfile )
-
-    updateStatusFile( statusfile, 0,0, 'bezig' , args )
-    
     try:
-        extension = os.path.splitext(importfile)[1]
-        flog.info(inspect.stack()[0][3]+": ZIP file "+importfile+" gevonden ")
+        extension = os.path.splitext( importfile )[1]
+        print ( extension )
+        msg = "ZIP file " + importfile + " gevonden."
+        writeLineToStatusFile( msg )
+        flog.info(inspect.stack()[0][3]+": " + msg )
         if extension != '.zip':
-            flog.warning(inspect.stack()[0][3]+": Geen passend ZIP file gevonden, gestopt.")  
-            return
+            msg = "Geen passend ZIP file gevonden, gestopt."
+            writeLineToStatusFile( msg )
+            flog.warning(inspect.stack()[0][3]+": " + msg)  
+            stop( 3 ) 
     except Exception as e:
-        flog.error(inspect.stack()[0][3]+": Geen passend ZIP file gevonden, gestopt -> "+str(e))
+        msg = "Geen passend ZIP file gevonden, gestopt -> " + str(e)
+        flog.error(inspect.stack()[0][3]+": " + msg )
+        stop( 3 ) 
+
+    openDatabases()
+
+    try:
+        zf = zipfile.ZipFile( importfile )
+        _head,tail = os.path.split( importfile ) 
+        msgToInfoLogAndStatusFile( "ZIP file " + tail + " succesvol geopend." )
+    except Exception as e:
+        msg = "ZIP file " + importfile + " probleem =>" + str(e)
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3]+": " + msg )  
+        stop( 30 ) 
+
+    # set file rights
+    setFile2user( const.FILE_DB_E_FILENAME, 'p1mon' )
+    setFile2user( const.FILE_DB_E_HISTORIE, 'p1mon' )
+    setFile2user( const.FILE_DB_CONFIG, 'p1mon' )
+    setFile2user( const.FILE_DB_STATUS, 'p1mon' )
+    setFile2user( const.FILE_DB_FINANCIEEL, 'p1mon' ) 
+    setFile2user( const.FILE_DB_WEATHER, 'p1mon' )
+    setFile2user( const.FILE_DB_WEATHER_HISTORIE, 'p1mon' )
+    setFile2user( const.FILE_DB_TEMPERATUUR_FILENAME, 'p1mon' )
+    setFile2user( const.FILE_DB_WATERMETER, 'p1mon' )
+    setFile2user( const.FILE_DB_WATERMETERV2, 'p1mon' )
+    setFile2user( const.FILE_DB_POWERPRODUCTION,'p1mon')
+    setFile2user( const.FILE_DB_PHASEINFORMATION, 'p1mon')
+    msgToInfoLogAndStatusFile( "file rechten van database bestanden correct gezet." )
+
+    dbIntegrityCheck( config_db,           const.FILE_DB_CONFIG )
+    dbIntegrityCheck( e_db_history_min,    const.FILE_DB_E_HISTORIE )
+    dbIntegrityCheck( e_db_financieel_dag, const.FILE_DB_FINANCIEEL )
+    dbIntegrityCheck( weer_db,             const.FILE_DB_WEATHER )
+    dbIntegrityCheck( weer_history_db_uur, const.FILE_DB_WEATHER_HISTORIE )
+    dbIntegrityCheck( temperature_db,      const.FILE_DB_TEMPERATUUR_FILENAME )
+    dbIntegrityCheck( watermeter_db_uur,   const.FILE_DB_WATERMETER )
+    dbIntegrityCheck( watermeter_db,       const.FILE_DB_WATERMETERV2 )
+    dbIntegrityCheck( fase_db,             const.FILE_DB_PHASEINFORMATION )
+    dbIntegrityCheck( power_production_db, const.FILE_DB_POWERPRODUCTION )
+
+    try:
+       
+        for fname in zf.namelist():  #filter out the manifest file first
+            if fname == const.FILE_EXPORT_MANIFEST[1:]:
+                data = zf.read(const.FILE_EXPORT_MANIFEST[1:]).decode('utf-8')
+                json_data = json.loads(data)
+                statusdata['records_total']     = json_data['record_count']
+                #statusdata['export_timestamp']  = str(json_data['timestamp'])
+                msgToInfoLogAndStatusFile( "manifest is correct verwerkt uit ZIP file." )
+                msgToInfoLogAndStatusFile( "aantal te importeren records " + str(statusdata['records_total']) + "." )
+                msgToInfoLogAndStatusFile( "import bestand creatie datum " + str(json_data['timestamp']) + "." )
+                break
+    except Exception as e:
+        msg = "manifest bestand is niet correct in ZIP file. -> " + str(e)
+        writeLineToStatusFile( msg )
+        flog.warning(inspect.stack()[0][3] + ": " + msg )
+
+    # custom www folder
+    try:
+        #raise Exception("dummy exception voor test.")
+        for fname in zf.namelist():
+            if fname[:len(const.FILE_PREFIX_CUSTOM_UI)-1] == const.FILE_PREFIX_CUSTOM_UI[1:]:
+                
+                zf.extract(fname,'/') # komt dan terecht in /p1mon/var/tmp
+                
+                exportcode = fname[len(const.FILE_PREFIX_CUSTOM_UI)-1:-3]
+
+                cmd = 'sudo tar -zxf ' + const.FILE_PREFIX_CUSTOM_UI + exportcode + '.gz -C ' + const.DIR_WWW_CUSTOM + " 2>/dev/null"
+                if os.system( cmd ) > 0:
+                    flog.error(inspect.stack()[0][3]+" custom www import gefaald.")
+                    msg = "custom www bestanden konden niet worden verwerkt of waren niet aanwezig."
+                    writeLineToStatusFile( msg )
+                    flog.warning( inspect.stack()[0][3] + ": " + msg )
+                else:
+                    msgToInfoLogAndStatusFile( "custom www bestanden succesvol verwerkt." )
+
+    except Exception as e:
+        msg = "ZIP file verwerking probleem tijdens custom www verwerking -> " + str(e)
+        writeLineToStatusFile( msg )
+        flog.error(inspect.stack()[0][3]+": ZIP file verwerking ging mis tijdens custom www verwerking "+str(e))    
+
+    try:
+
+        for fname in zf.namelist():
+            
+            _head,tail = os.path.split(fname)
+           
+            #print ( fname )
+            #print ( tail ) 
+            #print ( "configuratie="   +str( tail.startswith( 'configuratie' ) ) )
+            #print ( "financieel="      +str( tail.startswith( 'finacieel' ) ) )
+            #print ( "historie="       +str( tail.startswith( 'historie' ) ) )
+            #print ( "01_weer_historie="  +str( tail.startswith( '01_weer_historie' ) ) )
+            #print ( "weer="           +str( tail.startswith( 'weer' ) ) )
+            #print ( "manifest.json="  +str( tail.startswith( 'manifest.json' ) ) )
+            #print ( "02_temperatuur="  +str( tail.startswith( '02_temperatuur' ) ) )
+            #print ( "03_watermeter="  +str( tail.startswith( '03_watermeter' ) ) )
+
+            #############################################
+            if tail.startswith( const.DB_WATERMETERV2  ):
+                processImportDataSet( const.DB_WATERMETERV2 , watermeter_db, zf, fname, 'replace into watermeter*' )
+    
+            ###########################################
+            elif tail.startswith( const.DB_WATERMETER ):
+                processImportDataSet(  const.DB_WATERMETER  , watermeter_db_uur, zf, fname, 'replace into watermeter*' )
+
+            ############################################
+            elif tail.startswith( const.DB_TEMPERATURE ):
+                processImportDataSet( const.DB_TEMPERATURE , temperature_db, zf, fname, 'replace into temperatuur*' )
+                temperature_db.fix_missing_month_day( flog )
+
+            ############################################
+            elif tail.startswith( const.DB_E_HISTORIE ):
+                processImportDataSet( const.DB_E_HISTORIE, e_db_history_min, zf, fname, 'replace into e_history*' )
+
+            ############################################
+            # this is fix from version 0.9.19 > to fix the typo in "finacieel" text
+            elif tail.startswith( const.DB_FINANCIEEL ) or tail.startswith("finacieel"):
+                processImportDataSet( const.DB_FINANCIEEL, e_db_financieel_dag, zf, fname, 'replace into e_financieel*' )
+
+            ############################################
+            elif tail.startswith( const.DB_CONFIG ):
+                processImportDataSet( const.DB_CONFIG, config_db, zf, fname, 'update ' + const.DB_CONFIG_TAB + ' set PARAMETER=*' )
+
+            ############################################
+            elif tail.startswith( const.DB_WEER_HISTORY ):
+                processImportDataSet( const.DB_WEER_HISTORY, weer_history_db_uur, zf, fname, 'replace into weer_history*' )
+
+            ############################################
+            elif tail.startswith( const.DB_WEER ):
+                processImportDataSet( const.DB_WEER, weer_db, zf, fname, 'replace into weer*' )
+
+            ############################################
+            elif tail.startswith( const.DB_PHASEINFORMATION ):
+                processImportDataSet( const.DB_PHASEINFORMATION, fase_db, zf, fname, 'replace into ' + const.DB_FASE_REALTIME_TAB + '*' )
+                
+            ############################################
+            elif tail.startswith( const.DB_POWERPRODUCTION ):
+                processImportDataSet( const.DB_POWERPRODUCTION, power_production_db, zf, fname, 'replace into ' + const.DB_POWERPRODUCTION_TAB + '*' )
+
+    except Exception as e:
+        msg = "ZIP file verwerking globale fout -> " + str(e)
+        writeLineToStatusFile( msg )
+        flog.error( inspect.stack()[0][3] + ": " + msg )
+
+    zf.close 
+    msgToInfoLogAndStatusFile( "alle data uit het ZIP bestand verwerkt." )
+    
+    # waterbase V1 to V2 database conversion
+    # set de normale verwerking van de water datbase uit.
+    # doe de conversie
+    msgToInfoLogAndStatusFile( "watermeting conversie van oude naar nieuwe database gestart." )
+    os.system("/p1mon/scripts/P1WatermeterDbV1toV2.py")
+    msgToInfoLogAndStatusFile( "watermeting conversie van oude naar nieuwe database gereed." )
+
+    # lees systeem ID uit en zet deze in de config database. 
+    # versleuteld om dat deze data in een back-up bestand terecht kan komen.
+    try: 
+        msgToInfoLogAndStatusFile( 'System ID zetten in configuratie database: ' + str( systemid.getSystemId() ) )
+        #flog.info(inspect.stack()[0][3]+': System ID zetten in configuratie database: ' + str( systemid.getSystemId() ) )
+        sysid_encrypted  = crypto3.p1Encrypt( systemid.getSystemId(),"sysid" ).encode('utf-8').decode('utf-8')
+        config_db.strset( sysid_encrypted ,58, flog ) 
+    except Exception as e:
+        msg = " System ID zetten mislukt -> " + str(e.args[0])
+        writeLineToStatusFile( msg )
+        flog.warning( inspect.stack()[0][3] + ": " + msg )
+
+    setSoftwareVersionInformation()
+
+    msgToInfoLogAndStatusFile( 'WiFi wordt aangepast.' )
+    if os.system('sudo /p1mon/scripts/P1SetWifi.py') > 0:
+        msg = "Wifi aanpassen gefaald."
+        writeLineToStatusFile( msg )
+        flog.error( inspect.stack()[0][3] + ": " + msg )
+    else:
+        msgToInfoLogAndStatusFile( 'WiFi aanpassingen gereed.' )
+
+    msgToInfoLogAndStatusFile( 'CRON wordt aangepast.' )
+    if os.system('sudo -u p1mon /p1mon/scripts/P1Scheduler.py' ) > 0:
+        msg = "CRON update gefaald."
+        writeLineToStatusFile( msg )
+        flog.error( inspect.stack()[0][3] + ": " + msg )
+    else:
+        msgToInfoLogAndStatusFile( 'CRON aanpassingen gereed.' )
+
+    #make sure that all is copied to disk
+    msgToInfoLogAndStatusFile( "Databases worden van RAM naar het SDHC kaartje geschreven." )
+    os.system( "/p1mon/scripts/P1DbCopy.py --allcopy2disk --forcecopy" )
+    msgToInfoLogAndStatusFile( "Databases kopieren gereed." )
+
+    msgToInfoLogAndStatusFile( "ZIP bestand wordt verwijderd." )
+    try:
+        time.sleep(1) # allow file to be unlocked.
+        os.remove( importfile ) # remove uploaded file.
+    except Exception as e:
+        flog.error(inspect.stack()[0][3]+": "+str(e))
+        msg = "verwijderen van import bestand " + importfile + " gefaald."
+        writeLineToStatusFile( msg )
+        flog.error( inspect.stack()[0][3] + ": " + msg )
+
+    timestop = time.time()
+    m, s = divmod( timestop - timestart , 60) # make minutes and seconds from total secs count
+    msgToInfoLogAndStatusFile( "Gereed verwerkings tijd is " + '{:02d}:{:02d}.'.format( int(m), int(s) ) )
+
+    stop( 0 )
+    #############################
+    # einde van verwerking.     #
+    #############################
+
+
+########################################################
+# write to ramdisk file and the log for info entries   #
+########################################################
+def msgToInfoLogAndStatusFile( msg ):
+    flog.info(msg)
+    writeLineToStatusFile( msg )
+
+########################################################
+# write to ramdisk file the progress for lines that    #
+# are replaced.                                        #
+# forced = true means to write always                  #
+# normaly only write when every 3 seconds              #
+########################################################
+def msgReplaceDb( db_name , forced=False ):
+
+    if forced == False:
+        now = datetime.utcnow()
+        if int((now - datetime(1970, 1, 1)).total_seconds())%3 != 0:
+            return
+
+    # check if manifest data is not set or incomplete;
+    try :
+        pct_value = (statusdata['records_processed_ok']/statusdata['records_total']) * 100
+    except Exception as e:
+        pct_value  = -1 # there is an problem
+
+    # change message according to status of percentage.
+    if pct_value  == -1:
+        msg = "totaal records ok=" + str( statusdata['records_processed_ok'] ) + "aantal defect="+\
+            str( statusdata['records_processed_nok']  ) + ". (" + db_name  + ")."
+        replaceLastLineInStatusFile( msg )
+    else:
+        msg = "totaal records ok=" + str( statusdata['records_processed_ok'] ) + " aantal defect=" +\
+             str( statusdata['records_processed_nok']  ) +\
+        ". "  + "Voorgang: " + "{:.0f}".format( pct_value  )+ "% (" + db_name  + ")."
+        replaceLastLineInStatusFile( msg )
+
+########################################################
+# creates and wipes the status file                    #
+########################################################
+def initStatusFile():
+    if no_status_messages == True:
+        return
+    try:    
+        status_fp = open( const.FILE_SQL_IMPORT_STATUS, "w")
+        subprocess.run( ['sudo', 'chmod', '066' , const.FILE_WATERMETER_CNT_STATUS ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL )
+        status_fp.close()
+    except Exception as e:
+        flog.error( "status file schrijf fout: " + str(e) )
+
+########################################################
+# write to ramdisk file the progress                   #
+# the file is emptied/re-created when the program      #
+# starts.                                              #
+########################################################
+def writeLineToStatusFile( msg ):
+
+    if no_status_messages == True:
         return
 
-
-    #statusdata['status_text'] = 'bezig'
-    #writeStatusFile(statusfile)
-
-    updateStatusFile(statusfile, 0,0, 'bezig' , args )
-   
-    #zipfilename = const.DIR_EXPORT + const.EXPORT_PREFIX + timestamp +".zip"
-    #semafoorfile = const.DIR_RAMDISK + const.EXPORT_PREFIX + ".busy"
-    #fo = open(semafoorfile, "w")
-    #fo.write(semafoorfile)
-    #fo.close()
-
-    # open van config database
     try:
-        config_db.init(const.FILE_DB_CONFIG,const.DB_CONFIG_TAB)
+        fp = open( const.FILE_SQL_IMPORT_STATUS, "a" )
+        t=time.localtime()
+        msg_str = "%04d-%02d-%02d %02d:%02d:%02d" % (t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec) + " " + msg + '\n'
+        fp.write( msg_str )
+        flog.debug( msg_str )
+        fp.close()
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": database niet te openen(3)."+const.FILE_DB_CONFIG+") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database "+const.DB_CONFIG+" succesvol geopend.")
+        flog.error( "status file schrijf fout: " + str(e) )
+        initStatusFile()
 
-    # open van history database (1 min interval)       
+########################################################
+# write to ramdisk file and change the last line       #
+# the file is emptied/re-created when the program      #
+# starts.                                              #
+########################################################
+def replaceLastLineInStatusFile( msg ):
+
+    if no_status_messages == True:
+        return
+
     try:
-        e_db_history_min.init(const.FILE_DB_E_HISTORIE,const.DB_HISTORIE_MIN_TAB)    
+        t=time.localtime()
+        msg_str = "%04d-%02d-%02d %02d:%02d:%02d" % (t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec) + " " + msg + '\n'
+        
+        fp = open( const.FILE_SQL_IMPORT_STATUS , "r" )
+        list_of_lines = fp.readlines()
+        list_of_lines[ len(list_of_lines)-1 ] = msg_str
+        fp.close()
+        
+        fp = open( const.FILE_SQL_IMPORT_STATUS , "w" )
+        for line in list_of_lines:
+            fp.write( line )
+        fp.close()
+
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": database niet te openen(4)."+const.FILE_DB_E_HISTORIE+") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database "+const.DB_E_HISTORIE+" (minuut) succesvol geopend.")
+        flog.error( "status file schrijf/lees fout: " + str(e) )
+        initStatusFile()
+
+########################################################
+# instert the sql lines from an export z9p file        #
+# starts.                                              #
+########################################################
+def processImportDataSet( db_tabel_name , db_pointer, zip_file, db_filename, sql_match_str ):
+    try:
+
+        msgToInfoLogAndStatusFile( db_tabel_name + " wordt verwerkt." )
+
+        #raise Exception("test-excep")
+        data = zip_file.read( db_filename ).decode('utf-8')
+        content = data.split('\n')
+        content.remove("") # remove empty strings 
+
+        msgToInfoLogAndStatusFile( db_tabel_name + " tabel bevat " + str(len(content)) + " import records." )
+        writeLineToStatusFile( "" ) # make room for the dynamic line
+
+        for sql in content:
+        #if len( sql.strip() ) > 0: #clear empty string
+            # check if valid SQL
+            try:
+                if fnmatch.fnmatch( sql, sql_match_str ):
+                    #raise Exception("dummy exception voor test.")
+                    db_pointer.insert_rec( sql )
+                    statusdata['records_processed_ok'] += 1
+                else:
+                    statusdata['records_processed_nok'] += 1
+                    flog.warning( inspect.stack()[0][3]+": SQL STATEMENT= " + sql  + " -> " + str(e) )
+            except Exception as e:
+                statusdata['records_processed_nok'] =+ 1
+                flog.error( inspect.stack()[0][3]+": " + db_tabel_name+ " probleem " + str(e) )
+
+            msgReplaceDb( db_tabel_name )
+
+        msgReplaceDb( db_tabel_name , forced=True ) # forces the last line
+    except Exception as e:
+        msg = "ernstige fout met database '" + db_tabel_name + "' data niet of niet geheel verwerkt -> " + str(e)
+        writeLineToStatusFile( msg )
+        flog.error( inspect.stack()[0][3] + ": " + msg )
+
+#####################################################
+# reorder and check database file integrity         #
+#####################################################
+def dbIntegrityCheck( db, db_filename ):
+    try:
+        db.defrag()
+        db.integrity_check()
+        _head,tail = os.path.split( db_filename ) 
+        msg = "database integriteit " + tail + " correct."
+        writeLineToStatusFile( msg )
+        flog.info( inspect.stack()[0][3] + ": " + msg )
+    except Exception as e:
+        msg = "database bestand " + db_filename + " is corrupt. -> " + str(e)
+        writeLineToStatusFile( msg )
+        flog.critical( inspect.stack()[0][3]+": " + msg )
+        stop( 1000 ) 
+
+#####################################################
+# set current P1 monitor version information        #
+# This because the config data is imported from     #
+# possible previous versions                        #
+#####################################################
+def setSoftwareVersionInformation():
+    try:  
+        sql = " update " + const.DB_CONFIG_TAB + " set parameter = '" + str( const.P1_VERSIE) + "' where id = 0"
+        config_db.execute_rec( sql )
+        #print( sql )
+        msgToInfoLogAndStatusFile( "versie gezet: " + str( const.P1_VERSIE) )
+        #flog.info( inspect.stack()[0][3] + ": versie gezet: " + str( const.P1_VERSIE) )
+        #raise Exception("test-excep")
+
+        sql = " update " + const.DB_CONFIG_TAB + " set parameter = '" + str( const.P1_PATCH_LEVEL) + "' where id = 128"
+        config_db.execute_rec( sql )
+        #print( sql )
+        msgToInfoLogAndStatusFile( "patch level gezet: " + str( const.P1_PATCH_LEVEL) )
+        #flog.info( inspect.stack()[0][3] + ": patch level gezet: " + str( const.P1_PATCH_LEVEL) )
+
+        sql = " update " + const.DB_CONFIG_TAB + " set parameter = '" + str( const.P1_SERIAL_VERSION ) + "' where id = 133"
+        config_db.execute_rec( sql )
+        #print( sql )
+        msgToInfoLogAndStatusFile( "versie serienummer gezet: " + str(const.P1_SERIAL_VERSION ) )
+        #flog.info( inspect.stack()[0][3] + ": versie serienummer gezet: " + str(const.P1_SERIAL_VERSION ) )
+
+    except Exception as e:
+        msg = "Versie aanpassen gefaald "
+        writeLineToStatusFile( msg  + str(e.args[0]) )
+        flog.warning( inspect.stack()[0][3] + ": " + msg ) 
+
+#####################################################
+# open alle used sqlite database                    #
+#####################################################
+def openDatabases():
+
+    # open van history database 
+    try:
+        e_db_history_min.init( const.FILE_DB_E_HISTORIE, const.DB_HISTORIE_MIN_TAB )
+    except Exception as e:
+        msg = ": database niet te openen(3)." + const.DB_HISTORIE_MIN_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 4 )
+
+    msgToInfoLogAndStatusFile( "database " + const.DB_HISTORIE_MIN_TAB + " succesvol geopend." )
 
     # open van financieel database (dag interval)
     try:
-        e_db_financieel_dag.init(const.FILE_DB_FINANCIEEL ,const.DB_FINANCIEEL_DAG_TAB)    
+        e_db_financieel_dag.init( const.FILE_DB_FINANCIEEL ,const.DB_FINANCIEEL_DAG_TAB )
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": database niet te openen(9)."+const.FILE_DB_FINANCIEEL+") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database "+const.DB_FINANCIEEL+" succesvol geopend.")
-
+        msg = ": database niet te openen (" + const.DB_FINANCIEEL_DAG_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 5 )
+        
+    msgToInfoLogAndStatusFile( "database " + const.DB_FINANCIEEL_DAG_TAB + " succesvol geopend." )
+   
     # open van weer database 
     try:
-        weer_db.init(const.FILE_DB_WEATHER ,const.DB_WEATHER_TAB)  
+        weer_db.init(const.FILE_DB_WEATHER ,const.DB_WEATHER_TAB)
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": database niet te openen(10)."+const.FILE_DB_WEATHER+") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database "+const.DB_WEER+" succesvol geopend.")
-
+        msg = ": database niet te openen (" + const.DB_WEATHER_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 6 )
+        
+    msgToInfoLogAndStatusFile( "database " + const.DB_WEATHER_TAB + " succesvol geopend." )
+  
     # open van weer history database 
     try:
         #weer_history_db_uur.init(const.FILE_DB_WEATHER_HISTORIE ,const.DB_HISTORIE_MIN_TAB)
         weer_history_db_uur.init(const.FILE_DB_WEATHER_HISTORIE ,const.DB_WEATHER_UUR_TAB) 
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": database niet te openen(10)."+const.FILE_DB_WEATHER_HISTORIE+") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database "+const.DB_WEER_HISTORY+" succesvol geopend.")
+        msg = ": database niet te openen (" + const.DB_WEATHER_UUR_TA + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 7 )
+        
+    msgToInfoLogAndStatusFile( "database " + const.DB_WEATHER_UUR_TAB + " succesvol geopend." )
 
     # open van temperatuur database
     try:
@@ -201,329 +583,109 @@ def Main(argv):
         # fix the datbase structure from version 0.8.18 onwards, remove in the future
         temperature_db.change_table( flog )
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)."+const.FILE_DB_TEMPERATUUR_FILENAME+") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_TEMPERATUUR_TAB +" succesvol geopend.")
+        msg = ": database niet te openen (" + const.DB_TEMPERATUUR_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 8 )
+        
+    msgToInfoLogAndStatusFile( "database " + const.DB_TEMPERATUUR_TAB + " succesvol geopend." )
 
-    # open van watermeter databases
+    # open van watermeter databases (oud nodig voor import.)
     try:
         watermeter_db_uur.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_UUR_TAB + " succesvol geopend." )
+        msg = ": database niet te openen (" + const.DB_WATERMETER_UUR_TAB+ ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 9 )
+        
+    msgToInfoLogAndStatusFile( "database " + const.DB_WATERMETER_UUR_TAB + " succesvol geopend." )
+
+    try:
+        watermeter_db_dag.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_DAG_TAB , flog )
+    except Exception as e:
+        msg = ": database niet te openen (" + const.DB_WATERMETER_DAG_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 10 )
+
+    msgToInfoLogAndStatusFile( "database " + const.DB_WATERMETER_DAG_TAB + " succesvol geopend." )
+
+    try:
+        watermeter_db_maand.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_MAAND_TAB ,flog )
+    except Exception as e:
+        msg = ": database niet te openen (" + const.DB_WATERMETER_MAAND_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 11 )
+
+    msgToInfoLogAndStatusFile( "database " + const.DB_WATERMETER_MAAND_TAB + " succesvol geopend." )
+
+    try:
+        watermeter_db_jaar.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_JAAR_TAB, flog )
+    except Exception as e:
+        msg = ": database niet te openen (" + const.DB_WATERMETER_JAAR_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 12 )
+
+    msgToInfoLogAndStatusFile( "database " + const.DB_WATERMETER_JAAR_TAB + " succesvol geopend." )
 
     # open van watermeter V2 database 
     try:    
         watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
     except Exception as e:
-        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(20)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
-        sys.exit(1)
-    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
+        msg = ": database niet te openen (" + const.DB_WATERMETERV2_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 13 )
 
+    msgToInfoLogAndStatusFile( "database " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
 
-    # open van fase database      
+    # open van fase database
     try:
         fase_db.init( const.FILE_DB_PHASEINFORMATION ,const.DB_FASE_REALTIME_TAB )
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+" database niet te openen(1)." + const.FILE_DB_PHASEINFORMATION + ") melding:"+str(e.args[0]) )
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel: " + const.DB_FASE_REALTIME_TAB + " succesvol geopend.")
+        msg = ": database niet te openen (" + const.DB_FASE_REALTIME_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 14 )
+
+    msgToInfoLogAndStatusFile( "database " + const.DB_FASE_REALTIME_TAB + " succesvol geopend." )
 
     # open van power production database      
     try:    
         power_production_db.init( const.FILE_DB_POWERPRODUCTION , const.DB_POWERPRODUCTION_TAB, flog )
     except Exception as e:
-        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(1)." + const.FILE_DB_POWERPRODUCTION + " melding:" + str(e.args[0]) )
-        sys.exit(1)
-    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_POWERPRODUCTION_TAB + " succesvol geopend." )
+        msg = ": database niet te openen (" + const.DB_POWERPRODUCTION_TAB + ") melding: " + str(e.args[0] )
+        writeLineToStatusFile( msg )
+        flog.critical(inspect.stack()[0][3] + ": " + msg )
+        stop( 15 )
 
+    msgToInfoLogAndStatusFile( "database " + const.DB_POWERPRODUCTION_TAB + " succesvol geopend." )
 
-    try:
-        zf = zipfile.ZipFile( importfile )
+#####################################################
+# exit the program as clean as possible by closing  #
+# alle files, etc.                                  #
+# exit parameter is the exit code of the process    #
+# exit.                                             #
+#####################################################
+def stop(exit=0):
+    try: 
+        config_db.strset('0', 137, None ) # run flag
+        config_db.strset('', 138, None )  # file name to process
     except Exception as e:
-        flog.critical(inspect.stack()[0][3]+": ZIP file " + importfile + " probleem =>" + str(e) )  
-        sys.exit(1)
-
-    try:
-         for fname in zf.namelist():  #filter out the manifest file first
-            if fname == const.FILE_EXPORT_MANIFEST[1:]:
-                data = zf.read(const.FILE_EXPORT_MANIFEST[1:]).decode('utf-8')
-                json_data = json.loads(data)
-                statusdata['records_total']     = json_data['record_count']
-                statusdata['export_timestamp']  = str(json_data['timestamp'])
-                break
-    except Exception as e:
-        flog.warning(inspect.stack()[0][3]+": ZIP file verwerking ging mis tijdens manifest bestand verwerking "+str(e))
-
-    # custom www folder
-    try:
-        for fname in zf.namelist():
-            if fname[:len(const.FILE_PREFIX_CUSTOM_UI)-1] == const.FILE_PREFIX_CUSTOM_UI[1:]:
-                zf.extract(fname,'/') # komt dan terecht in /p1mon/var/tmp
-                 # via Watchdog wegens rechten op files.
-                exportcode = fname[len(const.FILE_PREFIX_CUSTOM_UI)-1:-3]
-                writeSemaphoreFile('custom_www_import' + exportcode,flog)
-                #print fname
-
-    except Exception as e:
-        flog.error(inspect.stack()[0][3]+": ZIP file verwerking ging mis tijdens custom www verwerking "+str(e))    
-
-    records_ok_cnt  = 0
-    records_nok_cnt = 0
-   
-    try:
-
-        for fname in zf.namelist():
-            
-            _head,tail = os.path.split(fname)
-            """
-            print ( fname )
-            print ( tail ) 
-            print ( "configuratie="   +str( tail.startswith( 'configuratie' ) ) )
-            print ( "financieel="      +str( tail.startswith( 'finacieel' ) ) )
-            print ( "historie="       +str( tail.startswith( 'historie' ) ) )
-            print ( "01_weer_historie="  +str( tail.startswith( '01_weer_historie' ) ) )
-            print ( "weer="           +str( tail.startswith( 'weer' ) ) )
-            print ( "manifest.json="  +str( tail.startswith( 'manifest.json' ) ) )
-            print ( "02_temperatuur="  +str( tail.startswith( '02_temperatuur' ) ) )
-            print ( "03_watermeter="  +str( tail.startswith( '03_watermeter' ) ) )
-            """
-
-            #if const.DB_WATERMETERV2  +"xxx" in fname:
-            if tail.startswith( const.DB_WATERMETERV2  ):
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": " + const.DB_WATERMETERV2 + " tabel bevat " + str(len(content)) + " import records." )
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        # check if valid SQL
-                        if fnmatch.fnmatch(sql,'replace into watermeter*'):
-                            watermeter_db.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                            records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT WATERMETER = "+sql)       
-                        updateStatusFile( statusfile, records_ok_cnt, records_nok_cnt, 'bezig' , args ) 
-
-            #if const.DB_WATERMETER  +"xxx" in fname:
-            elif tail.startswith( const.DB_WATERMETER  ):
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": " + const.DB_WATERMETER+ " tabel bevat " + str(len(content)) + " import records." )
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        # check if valid SQL
-                        if fnmatch.fnmatch(sql,'replace into watermeter*'):
-                            watermeter_db_uur.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                            records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT WATERMETER = "+sql)       
-                        updateStatusFile( statusfile, records_ok_cnt, records_nok_cnt, 'bezig' , args ) 
-
-            #if const.DB_TEMPERATURE +"xxx" in fname:
-            elif tail.startswith( const.DB_TEMPERATURE  ):
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": " + const.DB_TEMPERATURE+ " tabel bevat "+str(len(content))+" import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        # check if valid SQL
-                        if fnmatch.fnmatch(sql,'replace into temperatuur*'):
-                            temperature_db.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                            records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT TEMPERATUUR = "+sql)       
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig' ,args ) 
-                #backupFile(const.FILE_DB_TEMPERATUUR_FILENAME)
-                # fix the missing day and month records from versin 0.9.18 onwards. remove in the future.
-                temperature_db.fix_missing_month_day(flog)
-            
-            #if const.DB_E_HISTORIE+"xxx" in fname:
-            elif tail.startswith( const.DB_E_HISTORIE ):
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": "+const.DB_E_HISTORIE+ " tabel bevat "+str(len(content))+" import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        # check if valid SQL
-                        if fnmatch.fnmatch(sql,'replace into e_history*'):
-                            e_db_history_min.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                            records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT HISTORIE= "+sql)
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig', args )
-
-            #elif const.DB_FINANCIEEL in fname:
-            # the or is fix from version 0.9.19 > to fix the typo in "finacieel" text
-            elif tail.startswith( const.DB_FINANCIEEL ) or tail.startswith("finacieel"):
-                #print const.DB_FINANCIEEL
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": "+const.DB_FINANCIEEL+ " tabel bevat "+str(len(content))+" import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        # check if valid SQL
-                        if fnmatch.fnmatch(sql,'replace into e_financieel*'):
-                            e_db_financieel_dag.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                            records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT FINANCIEEL= "+sql)
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig', args ) 
-                
-
-            #elif const.DB_CONFIG in fname:
-            elif tail.startswith( const.DB_CONFIG ):
-                #print const.DB_CONFIG
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": "+const.DB_CONFIG+ " tabel bevat "+str(len(content))+" import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        if fnmatch.fnmatch(sql,'update config set PARAMETER=*'):         
-                            config_db.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                            records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT CONFIGURATIE= "+sql)
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig', args )
-
-            # elif const.DB_WEER_HISTORY in fname:
-            elif tail.startswith( const.DB_WEER_HISTORY ):
-                #print "WEER 2"
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": "+const.DB_WEER_HISTORY+ " tabel bevat "+str(len(content))+" import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        if fnmatch.fnmatch(sql,'replace into weer_history*'):         
-                            weer_history_db_uur.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                            records_nok_cnt = records_nok_cnt + 1
-                            flog.warning(inspect.stack()[0][3]+": SQL STATEMENT WEER HISTORY= "+sql)
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig', args )
-                
-
-            #elif const.DB_WEER in fname:
-            elif tail.startswith( const.DB_WEER ):
-                #print "WEER"
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": "+const.DB_WEER+ " tabel bevat "+str(len(content))+" import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        if fnmatch.fnmatch(sql,'replace into weer*'):         
-                            weer_db.insert_rec(sql)
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                           records_nok_cnt = records_nok_cnt + 1
-                           flog.warning(inspect.stack()[0][3]+": SQL STATEMENT WEER = "+sql)
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig', args )
-                
-            
-            #elif const.DB_PHASEINFORMATION in fname:
-            elif tail.startswith( const.DB_PHASEINFORMATION ):
-                #print ( "FASE INFO" )
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": " + const.DB_PHASEINFORMATION + " tabel bevat "+str( len(content) )+" import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        if fnmatch.fnmatch(sql,'replace into ' + const.DB_FASE_REALTIME_TAB + '*'):  #DB_FASE_REALTIME_TAB
-                            fase_db.insert_rec(sql)
-                            #print ( sql )
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                           records_nok_cnt = records_nok_cnt + 1
-                           flog.warning(inspect.stack()[0][3]+": SQL STATEMENT FASE DATA = "+sql)
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig', args )
-
-            elif tail.startswith( const.DB_POWERPRODUCTION ):
-                #print ( "POWERPRODUCTION INFO" )
-                data = zf.read(fname).decode('utf-8')
-                content = data.split('\n')
-                flog.info(inspect.stack()[0][3]+": " + const.DB_POWERPRODUCTION + " tabel bevat " + str( len(content) ) + " import records.")
-                for sql in content:
-                    if len( sql.strip() ) > 0: #clear empty string
-                        if fnmatch.fnmatch(sql,'replace into ' + const.DB_POWERPRODUCTION_TAB + '*'):
-                            power_production_db.excute( sql )
-                            #print ( sql )
-                            records_ok_cnt = records_ok_cnt + 1
-                        else:
-                           records_nok_cnt = records_nok_cnt + 1
-                           flog.warning(inspect.stack()[0][3]+": SQL STATEMENT FASE DATA = "+sql)
-                        updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'bezig', args )
-                
-    except Exception as e:
-        flog.error(inspect.stack()[0][3]+": ZIP file verwerking ging mis "+str(e))
-
-    flog.info(inspect.stack()[0][3]+": alle input verwerkt.")
-    zf.close 
-
-    # waterbase V1 to V2 database conversion
-    #os.system("/p1mon/scripts/P1WatermeterDbV1toV2.py > /dev/null 2>&1")
-    os.system("/p1mon/scripts/P1WatermeterDbV1toV2.py")
-
-    # lees systeem ID uit en zet deze in de config database. 
-    # versleuteld om dat deze data in een back-up bestand terecht kan komen.
-    try:  
-        flog.info(inspect.stack()[0][3]+': System ID zetten in configuratie database: ' + str( systemid.getSystemId() ) )
-        sysid_encrypted  = crypto3.p1Encrypt( systemid.getSystemId(),"sysid" ).encode('utf-8').decode('utf-8')
-        config_db.strset( sysid_encrypted ,58, flog ) 
-    except Exception as e:
-        flog.warning(inspect.stack()[0][3]+": System ID zetten mislukt -> " + str(e.args[0]))
-
-    #force update version nummer 
-    flog.info(inspect.stack()[0][3]+": Update versie naar "+str(const.P1_VERSIE))
-    config_db.insert_rec("replace into "+const.DB_CONFIG_TAB+\
-    " values ('0','"+const.P1_VERSIE+"','Versie:')")
-
-    if args.rmstatus == True: # no status file requested, do noting
-        backgroundcommand = '(sleep 7200;rm ' + importfile + ' > /dev/null 2>&1)&' # failsave for import file.
-    else:
-        backgroundcommand = '(sleep 7200;rm '+importfile+' && rm '+statusfile+' > /dev/null 2>&1)&' # failsave for import file.
-    flog.info(inspect.stack()[0][3]+": verwijderen van tijdelijke bestanden ->"+backgroundcommand )
-    os.system(backgroundcommand)
-
-    flog.info(inspect.stack()[0][3]+": wifi wordt aangepast")
-    semaphore3.writeSemaphoreFile('wifi_aanpassen',flog) #make sure then wifi is updated.
-
-    flog.info(inspect.stack()[0][3]+": cron wordt aangepast (backup)")
-    semaphore3.writeSemaphoreFile('cron',flog) #make sure then crontab is updated.
-
-    #make sure that all is copied to disk
-    os.system("/p1mon/scripts/P1DbCopy.py --allcopy2disk --forcecopy")
-
-    # reset watermeter to make sure the GPIO change is accepted.
-    # writeSemaphoreFile( 'watermeter_import_data', flog ) not needed in new version
-
-    timestop = time.time()
-    flog.info( inspect.stack()[0][3] + ": Gereed verwerkings tijd is " + f"{timestop - timestart:0.2f} seconden." ) 
-    updateStatusFile(statusfile, records_ok_cnt, records_nok_cnt, 'klaar', args ) 
-
-    try:
-        time.sleep(1) # allow file to be unlocked.
-        os.remove(importfile) # remove uploaded file TODO REMOVE #
-    except Exception as e:
-        flog.error(inspect.stack()[0][3]+": "+str(e))
-
-    flog.info(inspect.stack()[0][3]+": Gereed.")
-
-def fileChanged( src_file, dst_dir ):
-    # geef secs verschil terug van bestand
-    try :
-        statinfo_src = os.stat(src_file)
-        _head,tail = os.path.split(src_file)   
-        statinfo_dst = os.stat(dst_dir+"/"+tail)
-        return int(abs(statinfo_src.st_mtime - statinfo_dst.st_mtime))   
-    except Exception as _e:
-        return int(-1)
-
+        print ( "gefaald met het reset van de config id 137 (run flag) :" + str(e.args[0]) )
+    sys.exit( exit )
+    
+#####################################################
+# exit the program when recieving a signal          #
+#####################################################
+def saveExit(signum, frame):
+    #setFileFlags()
+    signal.signal(signal.SIGINT, original_sigint)
+    flog.info(inspect.stack()[0][3]+" SIGINT ontvangen, gestopt.")
+    stop( 2000 ) 
 
 #-------------------------------
 if __name__ == "__main__":
@@ -531,10 +693,14 @@ if __name__ == "__main__":
         os.umask( 0o002 )
         flog = fileLogger( const.DIR_FILELOG + prgname + ".log", prgname)    
         #### aanpassen bij productie
-        flog.setLevel( logging.INFO )
+        flog.setLevel( logging.DEBUG )
         flog.consoleOutputOn(True)
-    except Exception as e:
-        print ( "critical geen logging mogelijke, gestopt.:"+str(e.args[0]) )
-        sys.exit(1)
 
+        original_sigint = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, saveExit)
+
+    except Exception as e:
+        print ( "critical geen logging mogelijke, gestopt.:" + str(e.args[0]) )
+        stop( 1 )
+    
     Main(sys.argv[1:])

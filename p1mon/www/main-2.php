@@ -78,9 +78,9 @@ function readJsonApiHistoryDay(){
 function readJsonApiSmartMeter(){ 
     $.getScript( "./api/v1/smartmeter?limit=60", function( data, textStatus, jqxhr ) {
       try {
-	
+    
         var jsondata = JSON.parse(data); 
-		
+        
         var item;
         verbrData10sec.length = 0;
         
@@ -90,11 +90,11 @@ function readJsonApiSmartMeter(){
             verbrData10sec.push([item[0],item[8]/1000]); // Watt consumend
         }  
         
-		$('#verbruikDal').text ( padXX( jsondata[0][3]  ,5 ,3 )+" kWh")
-		$('#verbruikPiek').text( padXX( jsondata[0][4]  ,5 ,3)+" kWh");
-		$('#verbruikDGas').text( padXX( jsondata[0][10] ,5 ,3));
-		
-		if ( jsondata[0][7] == 'P' ) {
+        $('#verbruikDal').text ( padXX( jsondata[0][3]  ,5 ,3 )+" kWh")
+        $('#verbruikPiek').text( padXX( jsondata[0][4]  ,5 ,3)+" kWh");
+        $('#verbruikDGas').text( padXX( jsondata[0][10] ,5 ,3));
+        
+        if ( jsondata[0][7] == 'P' ) {
             $("#verbruikPiekI").css("color","#F2BA0F");
             $("#verbruikDalI" ).css("color","#6E797C");
         } else {
@@ -123,49 +123,49 @@ function readJsonApiStatus(){
 
 $.getScript( "./api/v1/status", function( data, textStatus, jqxhr ) {
   try {
-	//var verbruikTotaal =  0;
-	//var geleverdTotaal =  0;
-	var jsondata = JSON.parse(data); 
-	
-	for (var j=0;  j < jsondata.length; j++){  
-		// console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
-		if ( jsondata[j][0] == 1 ) {
-			$('#maxkWPiekVerbruikWaarde').text( padXX( jsondata[j][1], 2, 2 ) + " kW" );
-			continue;
-		}
-		if ( jsondata[j][0] == 2 ) {
-			$('#maxkWPiekVerbruikDatum').text( jsondata[j][1] );
-			continue;
-		}
-		if ( jsondata[j][0] == 8 ) { 
-			$('#verbruikDalKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
-			//verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
-			continue;
-		}
-		if ( jsondata[j][0] == 9 ) {
-			$('#verbruikPiekKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
-			//verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
-			continue;
-		}
+    //var verbruikTotaal =  0;
+    //var geleverdTotaal =  0;
+    var jsondata = JSON.parse(data); 
+    
+    for (var j=0;  j < jsondata.length; j++){  
+        // console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
+        if ( jsondata[j][0] == 1 ) {
+            $('#maxkWPiekVerbruikWaarde').text( padXX( jsondata[j][1], 2, 2 ) + " kW" );
+            continue;
+        }
+        if ( jsondata[j][0] == 2 ) {
+            $('#maxkWPiekVerbruikDatum').text( jsondata[j][1] );
+            continue;
+        }
+        if ( jsondata[j][0] == 8 ) { 
+            $('#verbruikDalKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
+            //verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
+            continue;
+        }
+        if ( jsondata[j][0] == 9 ) {
+            $('#verbruikPiekKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
+            //verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
+            continue;
+        }
         /*
-		if ( jsondata[j][0] == 44 ) {
-			$('#verbruikGasDag').text( padXX( jsondata[j][1] ,5, 3) );
-			continue;
-		}
+        if ( jsondata[j][0] == 44 ) {
+            $('#verbruikGasDag').text( padXX( jsondata[j][1] ,5, 3) );
+            continue;
+        }
         */
         if ( jsondata[j][0] == 74 ) { 
             consumptionPowerPhase[0] = parseFloat( jsondata[j][1] )
-			continue;
-		}
+            continue;
+        }
         if ( jsondata[j][0] == 75 ) { 
             consumptionPowerPhase[1] = parseFloat( jsondata[j][1] )
-			continue;
-		}
+            continue;
+        }
         if ( jsondata[j][0] == 76 ) { 
             consumptionPowerPhase[2] = parseFloat( jsondata[j][1] )
-			continue;
-		}
-	 }
+            continue;
+        }
+     }
 
     if ( showPhaseInformation != 0 ) {
             autoHideNonPresentPhaseInformation() 
@@ -272,45 +272,45 @@ function readJsonApiHistoryHour( cnt ){
         var jsondata = JSON.parse(data); 
         var item;
         recordsLoaded     = jsondata.length;
-		GdataHourGas.length   = 0;
+        GdataHourGas.length   = 0;
         for (var j = jsondata.length; j > 0; j--){    
             item = jsondata[j-1];
             item[1] = item[1]*1000; // highchart likes millisecs.
             GdataHourGas.push ( [item[1], item[10] ]);
         } 
-		gaugeDataGasVerbruik =  GdataHourGas[jsondata.length-1];
+        gaugeDataGasVerbruik =  GdataHourGas[jsondata.length-1];
 
-		//console.log( "gaugeDataGasVerbruik = "+ gaugeDataGasVerbruik  );
-		//console.log( "gaugeDataGasVerbruik[0]= "+ gaugeDataGasVerbruik[1] );
-		
-		//gaugeDataGasVerbruik[1] = 0;
+        //console.log( "gaugeDataGasVerbruik = "+ gaugeDataGasVerbruik  );
+        //console.log( "gaugeDataGasVerbruik[0]= "+ gaugeDataGasVerbruik[1] );
+        
+        //gaugeDataGasVerbruik[1] = 0;
 
-		if (gaugeDataGasVerbruik[1] == 0 && predictionInOn == 1 ) {
-			if ( GdataHourGas.length > 4 ) { 
-				//console.log( "gaugeDataGasVerbruik[1]=aangepast, voorspelling actief." )
-				var average_gas_value = (
-				GdataHourGas[GdataHourGas.length-2][1] + 
-				GdataHourGas[GdataHourGas.length-3][1] + 
-				GdataHourGas[GdataHourGas.length-4][1]) / 3;
-				
-				if ( average_gas_value > 0 ) {
-					gaugeDataGasVerbruik[1] = average_gas_value
-					GdataHourGas[jsondata.length-1][1] = average_gas_value
-					showStuff('gasVoorspelling');
-				 } else {
-					hideStuff('gasVoorspelling');
-				 }
-				} 
-			} else {
-					hideStuff('gasVoorspelling');
-			}
+        if (gaugeDataGasVerbruik[1] == 0 && predictionInOn == 1 ) {
+            if ( GdataHourGas.length > 4 ) { 
+                //console.log( "gaugeDataGasVerbruik[1]=aangepast, voorspelling actief." )
+                var average_gas_value = (
+                GdataHourGas[GdataHourGas.length-2][1] + 
+                GdataHourGas[GdataHourGas.length-3][1] + 
+                GdataHourGas[GdataHourGas.length-4][1]) / 3;
+                
+                if ( average_gas_value > 0 ) {
+                    gaugeDataGasVerbruik[1] = average_gas_value
+                    GdataHourGas[jsondata.length-1][1] = average_gas_value
+                    showStuff('gasVoorspelling');
+                 } else {
+                    hideStuff('gasVoorspelling');
+                 }
+                } 
+            } else {
+                    hideStuff('gasVoorspelling');
+            }
 
         /*
-		$("#actGasMeterGrafiekVerbruikt").highcharts().series[0].update({
+        $("#actGasMeterGrafiekVerbruikt").highcharts().series[0].update({
             pointStart: GdataHourGas[0][0],
             data: GdataHourGas
         }, true);
-		//$('#actGasMeterGrafiekVerbruikt').highcharts().update();
+        //$('#actGasMeterGrafiekVerbruikt').highcharts().update();
         $("#actGasMeterGrafiekVerbruikt").highcharts().redraw();
         */
         $("#actGasMeterGrafiekVerbruikt").highcharts().series[0].setData( GdataHourGas )
@@ -338,56 +338,56 @@ function createChartVerbruik(){
             plotShadow: false
         },
         exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null },
-    	tooltip: { enabled: false },
-    	pane: {
-	        startAngle: -150,
-	        endAngle: 150,
-	        
-	        background: [{
-	            backgroundColor: '#F5F5F5',
-	            borderWidth: 2,
-	            outerRadius: '109%'
-	        }]
-	    },      
-    	yAxis: {
-        	min: 0,
-        	max: wattageMaxValueConsumption, // dynamic
-			labels: {
-            	distance: -27
-        	},
-      
-        	minorTickInterval: 'auto',
-        	minorTickWidth: 11,
-        	minorTickLength: 18,
-        	minorTickPosition: 'inside',
-        	minorTickColor: '#F2BA0F',
+        credits: { enabled: false },
+        title: { text: null },
+        tooltip: { enabled: false },
+        pane: {
+            startAngle: -150,
+            endAngle: 150,
             
-        	tickPixelInterval: 50,
-        	tickWidth: 11,
-        	tickPosition: 'inside',
-        	tickLength: 18,
-        	tickColor: '#F2BA0F',
+            background: [{
+                backgroundColor: '#F5F5F5',
+                borderWidth: 2,
+                outerRadius: '109%'
+            }]
+        },      
+        yAxis: {
+            min: 0,
+            max: wattageMaxValueConsumption, // dynamic
+            labels: {
+                distance: -27
+            },
+      
+            minorTickInterval: 'auto',
+            minorTickWidth: 11,
+            minorTickLength: 18,
+            minorTickPosition: 'inside',
+            minorTickColor: '#F2BA0F',
+            
+            tickPixelInterval: 50,
+            tickWidth: 11,
+            tickPosition: 'inside',
+            tickLength: 18,
+            tickColor: '#F2BA0F',
             title: {
                 useHTML: true,
                 text: 'kW',
                 x: 0,
                 y: 160,
             },
-    	},
-    	plotOptions: {
-    		gauge: {
-				dial: {
-    				radius: '70%',
-					backgroundColor: '#384042',
-					borderWidth: 1,
-					baseWidth: 15,
-					topWidth: 1,
-					baseLength: '1%', // of radius
-					rearLength: '1%'
-				},
-				pivot: {
+        },
+        plotOptions: {
+            gauge: {
+                dial: {
+                    radius: '70%',
+                    backgroundColor: '#384042',
+                    borderWidth: 1,
+                    baseWidth: 15,
+                    topWidth: 1,
+                    baseLength: '1%', // of radius
+                    rearLength: '1%'
+                },
+                pivot: {
                     radius: 8,
                     borderWidth: 1,
                     backgroundColor: '#384042',
@@ -407,96 +407,96 @@ function createChartVerbruik(){
                     }
                 },
                 wrap: false  
-			}
+            }
         },
-    	series: [{
-    		marker: {
-            	fillColor: '#384042',
-            	lineColor: '#384042'
+        series: [{
+            marker: {
+                fillColor: '#384042',
+                lineColor: '#384042'
                 
-        	},	
-        	animation: {
+            },    
+            animation: {
                 duration: 1000  
             },
-        	data: [{
-        		color: '#384042',
-        		y: gaugeDataVerbruik
-        	}]
-    	}]
-	});
+            data: [{
+                color: '#384042',
+                y: gaugeDataVerbruik
+            }]
+        }]
+    });
 }
 
 function createChartGasVerbruik(){
-	$('#actGasMeterVerbruik').highcharts({
-    	chart: {
-		style: {
-			fontFamily: 'robotomedium'
-			},
-        	type: 'gauge',
-        	plotBackgroundColor: null,
-        	plotBackgroundImage: null,
-        	plotBorderWidth: 0,
-        	plotShadow: false
-    	},
-    	exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null },
-    	tooltip: { enabled: false },
-    	pane: {
-	        startAngle: -150,
-	        endAngle: 150,        
-	        background: [{
-	            backgroundColor: '#F5F5F5',
-	            borderWidth: 2,
-	            outerRadius: '109%'
-	        }]
-	    },  
-		 
-    	yAxis: {
-			max: gasMaxValuePConsumption, // dynamic
-			labels: {
-            	distance: -27
-        	},
-        	min: 0,
-        	minorTickInterval: 'auto',
-        	minorTickWidth: 11,
-        	minorTickLength: 18,
-        	minorTickPosition: 'inside',
-        	minorTickColor: '#507ABF', 
-        	tickPixelInterval: 50,
-        	tickWidth: 11,
-        	tickPosition: 'inside',
-        	tickLength: 18,
-        	tickColor: '#507ABF',
+    $('#actGasMeterVerbruik').highcharts({
+        chart: {
+        style: {
+            fontFamily: 'robotomedium'
+            },
+            type: 'gauge',
+            plotBackgroundColor: null,
+            plotBackgroundImage: null,
+            plotBorderWidth: 0,
+            plotShadow: false
+        },
+        exporting: { enabled: false },
+        credits: { enabled: false },
+        title: { text: null },
+        tooltip: { enabled: false },
+        pane: {
+            startAngle: -150,
+            endAngle: 150,        
+            background: [{
+                backgroundColor: '#F5F5F5',
+                borderWidth: 2,
+                outerRadius: '109%'
+            }]
+        },  
+         
+        yAxis: {
+            max: gasMaxValuePConsumption, // dynamic
+            labels: {
+                distance: -27
+            },
+            min: 0,
+            minorTickInterval: 'auto',
+            minorTickWidth: 11,
+            minorTickLength: 18,
+            minorTickPosition: 'inside',
+            minorTickColor: '#507ABF', 
+            tickPixelInterval: 50,
+            tickWidth: 11,
+            tickPosition: 'inside',
+            tickLength: 18,
+            tickColor: '#507ABF',
             title: {
                 useHTML: true,
                 text: 'm&#179;/u',
                 x: 0,
                 y: 160,
             },
-    	},
-    	plotOptions: {
-    		gauge: {
-				dial: {
-    				radius: '70%',
-					backgroundColor: '#384042',
-					borderWidth: 1,
-					baseWidth: 15,
-					topWidth: 1,
-					baseLength: '1%', // of radius
-					rearLength: '1%'
-				},
-				pivot: {
+        },
+        plotOptions: {
+            gauge: {
+                dial: {
+                    radius: '70%',
+                    backgroundColor: '#384042',
+                    borderWidth: 1,
+                    baseWidth: 15,
+                    topWidth: 1,
+                    baseLength: '1%', // of radius
+                    rearLength: '1%'
+                },
+                pivot: {
                     radius: 8,
                     borderWidth: 1,
                     backgroundColor: '#384042',
                     borderColor: '#F5F5F5'        
                 },
                 dataLabels: { 
-					useHTML: true,          
+                    useHTML: true,          
                     //format: '{point.y:.2f} m&#179;/u',
                     format: '{point.y:.3f}',
-                	borderColor: '#384042',
+                    borderColor: '#384042',
                     padding: 4,
                     borderRadius: 5,
                     verticalAlign: 'center',
@@ -508,149 +508,149 @@ function createChartGasVerbruik(){
                     }
                 },
                 wrap: false  
-			}
+            }
         },
-    	series: [{
-    		marker: {
-            	fillColor: '#384042',
-            	lineColor: '#384042'
-        	},	
-        	animation: {
+        series: [{
+            marker: {
+                fillColor: '#384042',
+                lineColor: '#384042'
+            },    
+            animation: {
                 duration: 1000  
             },
-        	data: [{
-        		color: '#384042',
-				color: "#507ABF",
-        		y: gaugeDataGasVerbruik
-        	}]
-    	}]
-	});
+            data: [{
+                color: '#384042',
+                color: "#507ABF",
+                y: gaugeDataGasVerbruik
+            }]
+        }]
+    });
 }
 
-function createChartVerbruikGrafiek() {	
-	$('#actVermogenMeterGrafiekVerbruik').highcharts({
-    	chart: {
-        	type: 'areaspline' 	
-    	},
-    	legend: {
+function createChartVerbruikGrafiek() {    
+    $('#actVermogenMeterGrafiekVerbruik').highcharts({
+        chart: {
+            type: 'areaspline'     
+        },
+        legend: {
             enabled: false
         },
-    	exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null }, 	
-    	tooltip: {
-        	useHTML: true,
-        	style: {
-     			padding: 3,
-     			color: '#6E797C'
- 			},
-        	formatter: function() {
-				var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
-				s += '<br/><span style="color: #F2BA0F;">Vermogen kW: </span>'+this.y.toFixed(3);
-				return s;
-			},		      	
-	    	backgroundColor: '#F5F5F5',
-	    	borderColor: '#DCE1E3',
-	    	crosshairs: [true, true],
-	    	borderWidth: 1
-	    },  
-	    xAxis: {   		
-	        type: 'datetime',
-	        lineColor: '#6E797C',
-		    lineWidth: 1     
-	    },
-    	yAxis: {
-	    	gridLineColor: '#6E797C',
-	    	gridLineDashStyle: 'longdash',
-        	floor: 0,
-        	title: { 
+        exporting: { enabled: false },
+        credits: { enabled: false },
+        title: { text: null },     
+        tooltip: {
+            useHTML: true,
+            style: {
+                 padding: 3,
+                 color: '#6E797C'
+             },
+            formatter: function() {
+                var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
+                s += '<br/><span style="color: #F2BA0F;">Vermogen kW: </span>'+this.y.toFixed(3);
+                return s;
+            },                  
+            backgroundColor: '#F5F5F5',
+            borderColor: '#DCE1E3',
+            crosshairs: [true, true],
+            borderWidth: 1
+        },  
+        xAxis: {           
+            type: 'datetime',
+            lineColor: '#6E797C',
+            lineWidth: 1     
+        },
+        yAxis: {
+            gridLineColor: '#6E797C',
+            gridLineDashStyle: 'longdash',
+            floor: 0,
+            title: { 
                 text: null
             }
-    	},
-    	plotOptions: {
+        },
+        plotOptions: {
             series: {
-    		color: '#F2BA0F',
-    			states: {
-            		hover: {
-                		enabled: false
-            		}
-        		},
-            	marker: {
-            		enabled: false
-             	}
+            color: '#F2BA0F',
+                states: {
+                    hover: {
+                        enabled: false
+                    }
+                },
+                marker: {
+                    enabled: false
+                 }
             }
         },
-    	series: [{	
+        series: [{    
             data: verbrData10sec
-    	}]
-	});
+        }]
+    });
 }
 
-function createChartVerbruikGasGrafiek() {	
-	$('#actGasMeterGrafiekVerbruikt').highcharts({
-    	chart: {
-        	type: 'areaspline' 	
-    	},
-    	legend: {
+function createChartVerbruikGasGrafiek() {    
+    $('#actGasMeterGrafiekVerbruikt').highcharts({
+        chart: {
+            type: 'areaspline'     
+        },
+        legend: {
             enabled: false
         },
-    	exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null },
-    	tooltip: {
-        	useHTML: true,
-        	style: {
-     			padding: 3,
-     			color: '#6E797C'
- 			},
-        	formatter: function() {
-				var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
-				s += '<br/><span style="color: #507ABF;">m<sup>3</sup> gas verbruikt per uur: </span>'+this.y.toFixed(3);
-				return s;
-			},
-				      	
-	    	backgroundColor: '#F5F5F5',
-	    	borderColor: '#DCE1E3',
-	    	crosshairs: [true, true],
-	    	borderWidth: 1
-	    },       
-	    xAxis: {   		
-	        type: 'datetime',
-	        lineColor: '#6E797C',
-		    lineWidth: 1       
-	    },
-    	yAxis: {
-	    	gridLineColor: '#6E797C',
-	    	gridLineDashStyle: 'longdash',
-	    	floor: 0,
-        	title: { 
+        exporting: { enabled: false },
+        credits: { enabled: false },
+        title: { text: null },
+        tooltip: {
+            useHTML: true,
+            style: {
+                 padding: 3,
+                 color: '#6E797C'
+             },
+            formatter: function() {
+                var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
+                s += '<br/><span style="color: #507ABF;">m<sup>3</sup> gas verbruikt per uur: </span>'+this.y.toFixed(3);
+                return s;
+            },
+                          
+            backgroundColor: '#F5F5F5',
+            borderColor: '#DCE1E3',
+            crosshairs: [true, true],
+            borderWidth: 1
+        },       
+        xAxis: {           
+            type: 'datetime',
+            lineColor: '#6E797C',
+            lineWidth: 1       
+        },
+        yAxis: {
+            gridLineColor: '#6E797C',
+            gridLineDashStyle: 'longdash',
+            floor: 0,
+            title: { 
                 text: null
             }
-    	},
-    	plotOptions: {
+        },
+        plotOptions: {
             series: {
-    		color: '#507ABF',
-    			states: {
-            		hover: {
-                		enabled: false
-            		}
-        		},
-            	marker: {
-            		enabled: false
-             	}
+            color: '#507ABF',
+                states: {
+                    hover: {
+                        enabled: false
+                    }
+                },
+                marker: {
+                    enabled: false
+                 }
             }
         },
-    	series: [{	
+        series: [{    
             data: GdataHourGas
-    	}]
-	});
+        }]
+    });
 }
 
 function DataLoop10Sec() {
     secs--;
     if( secs < 0 ) { 
         secs = 10;
-		readJsonApiHistoryHour( gasCount );
+        readJsonApiHistoryHour( gasCount );
         readJsonApiSmartMeter()
         readJsonApiStatus()
         readJsonApiFinancial()
@@ -716,26 +716,22 @@ $(function () {
     setDynamicTitles();
     screenSaver( <?php echo config_read(79);?> ); // to enable screensaver for this screen.
     // initial load
-	secs = 0
+    secs = 0
     DataLoop10Sec();
 });
 </script>
 </head>
 <body >
 
-<div class="top-wrapper">
-    <div class="content-wrapper"> 
-        <?php page_header();?>     
-    </div>
-</div>
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">
-		<!-- header 2 -->
-		<?php pageclock(); ?>
-		<?php page_menu_header_main(1);?>
-	    <?php weather_info(); ?>
-	</div>
+        <!-- header 2 -->
+        <?php pageclock(); ?>
+        <?php page_menu_header_main(1);?>
+        <?php weather_info(); ?>
+    </div>
 </div>
 <div class="mid-section">
     <div class="left-wrapper">
@@ -746,52 +742,52 @@ $(function () {
     
     <div class="mid-content">
     <!-- links -->
-    	<div class="frame-2-top">
-    		<span class="text-2">elektrisch & water verbruik</span>
-    	</div>
-    	<div class="frame-2b-bot"> 
-            <div class="pos-2" id="actVermogenMeterVerbruik"></div>	
+        <div class="frame-2-top">
+            <span class="text-2">elektrisch & water verbruik</span>
+        </div>
+        <div class="frame-2b-bot"> 
+            <div class="pos-2" id="actVermogenMeterVerbruik"></div>    
             <div class="pos-46" id="actVermogenFaseVerbruik"></div>
-    		<div class="pos-47 pad-2">
-    			<div class="frame-3-top">
-    			<span id="verbruikPiekHeader" class="text-3">meterstand</span>
-    			</div>
-    			<div class="frame-2-bot"> 
+            <div class="pos-47 pad-2">
+                <div class="frame-3-top">
+                <span id="verbruikPiekHeader" class="text-3">meterstand</span>
+                </div>
+                <div class="frame-2-bot"> 
                     <div id="meterstand_piek_verbruik_totaal" title="fout niet gezet.">
-					<span class="fa-layers fa-fw text-4">
-    					<i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					<i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
-  					</span>
+                    <span class="fa-layers fa-fw text-4">
+                        <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                        <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
+                      </span>
                     <span id="verbruikPiek" class="text-4"></span><br></div>
                     <div id="meterstand_dal_verbruik_totaal" title="fout niet gezet.">
-					<span class="fa-layers fa-fw text-4">
-    					<i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					<i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
-  					</span>
-					<span id="verbruikDal" class="text-4 "></span></div>
+                    <span class="fa-layers fa-fw text-4">
+                        <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                        <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
+                      </span>
+                    <span id="verbruikDal" class="text-4 "></span></div>
 
                     <div id="watermeter" title="<?php echo strIdx( 73 );?>">
-						<i class="pad-18 text-4 fas fa-tint">&nbsp;</i>&nbsp;<span id="verbruikWater" class="text-4 pad-6">00000.000</span><span class="text-4"> m<sup>3</sup></span>
-					</div>
+                        <i class="pad-18 text-4 fas fa-tint">&nbsp;</i>&nbsp;<span id="verbruikWater" class="text-4 pad-6">00000.000</span><span class="text-4"> m<sup>3</sup></span>
+                    </div>
 
-    			</div>
-    			<div class="pad-14"></div>
-    			<div class="frame-3-top">
-    			<span id="verbruikDalHeader" class="text-3">vandaag</span>
-    			</div>
-    			<div class="frame-2-bot"> 
+                </div>
+                <div class="pad-14"></div>
+                <div class="frame-3-top">
+                <span id="verbruikDalHeader" class="text-3">vandaag</span>
+                </div>
+                <div class="frame-2-bot"> 
                         <div id="meterstand_piek_verbruik_dag" title="fout niet gezet.">
-					    <span id="verbruikPiekI" class="fa-layers fa-fw text-4">
-    					    <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					    <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
-  					    </span>
-					    <span id="verbruikPiekKW" class="text-4"></span><br>
+                        <span id="verbruikPiekI" class="fa-layers fa-fw text-4">
+                            <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                            <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
+                          </span>
+                        <span id="verbruikPiekKW" class="text-4"></span><br>
                     </div>
                     <div id="meterstand_dal_verbruik_dag" title="fout niet gezet.">
-					    <span id="verbruikDalI" class="fa-layers fa-fw text-4">
-    					    <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					    <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
-  					    </span>
+                        <span id="verbruikDalI" class="fa-layers fa-fw text-4">
+                            <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                            <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
+                          </span>
                         <span id="verbruikDalKW" class="text-4"></span><br>
                     </div>
                     <div title="<?php echo strIdx( 39 );?>">
@@ -800,12 +796,12 @@ $(function () {
                     <div title="<?php echo strIdx( 40 );?>">
                         <span><i class="pad-6 text-4 fas fa-arrow-circle-up">&nbsp;</i>&nbsp;</span><span id="maxkWPiekVerbruikWaarde" class="text-4"></span>
                     </div>
-    			</div>
-    			<div class="pad-14"></div>
-    			<div class="frame-3-top">
-    			<span class="text-3">totaal vandaag</span>
-    			</div>
-    			<div class="frame-2-bot"> 
+                </div>
+                <div class="pad-14"></div>
+                <div class="frame-3-top">
+                <span class="text-3">totaal vandaag</span>
+                </div>
+                <div class="frame-2-bot"> 
                 <div title="<?php echo strIdx( 41 );?>">
                     <i class="pad-6 text-4 fa fa-bolt"></i>&nbsp;<span id="verbruikDalEnPiekKW" class="text-4 pad-6"></span><br>
                     <i class="text-4 fas fa-tint"></i>&nbsp;<span id="verbruikWaterDag" class="text-4">000000000</span><span class="text-4"> Liter</span><br>
@@ -813,67 +809,67 @@ $(function () {
                 <div title="<?php echo strIdx( 47 );?>">
                     <i class="text-4 fas fa-euro-sign"></i>&nbsp;<span id="verbruikKosten" class="text-4 pad-6"></span> 
                 </div>
-    			</div>	
-    		</div>	
+                </div>    
+            </div>    
 
-    		<div class="pos-48">
-    		    <div class="frame-3-top">
-    			<span class="text-3">kW verbruikt</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<div id="actVermogenMeterGrafiekVerbruik" class="pos-4"></div>
-    			</div>		
-    		</div>
-    	</div>	
+            <div class="pos-48">
+                <div class="frame-3-top">
+                <span class="text-3">kW verbruikt</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <div id="actVermogenMeterGrafiekVerbruik" class="pos-4"></div>
+                </div>        
+            </div>
+        </div>    
     </div>
     
     <!-- rechts -->
     <div class="right-wrapper pad-1">
         <div class="frame-2-top">
-    		<span class="text-2">gas verbruik</span>
-    	</div>
-    	<div class="frame-2b-bot"> 
-    		<div class="pos-2" id="actGasMeterVerbruik"></div>	
-    		<div class="pos-3 pad-2">
-    			<div class="frame-3-top">
-    			<span id="verbruikGasHeader" class="text-3">meterstand</span>
-    			</div>
-    			<div class="frame-2-bot"> 
+            <span class="text-2">gas verbruik</span>
+        </div>
+        <div class="frame-2b-bot"> 
+            <div class="pos-2" id="actGasMeterVerbruik"></div>    
+            <div class="pos-3 pad-2">
+                <div class="frame-3-top">
+                <span id="verbruikGasHeader" class="text-3">meterstand</span>
+                </div>
+                <div class="frame-2-bot"> 
                 <div title="<?php echo strIdx( 38 );?>">
-					<i class="pad-18 text-4 fab fa-gripfire">&nbsp;</i>&nbsp;<span id="verbruikDGas" class="text-4 pad-6"></span><span class="text-4"> m<sup>3</sup></span>
+                    <i class="pad-18 text-4 fab fa-gripfire">&nbsp;</i>&nbsp;<span id="verbruikDGas" class="text-4 pad-6"></span><span class="text-4"> m<sup>3</sup></span>
                 </div>
                 </div>
-    			<div class="pad-14"></div>
-    			<div class="frame-3-top">
-    			<span id="geleverdDalHeader" class="text-3">vandaag</span>
-    			</div>
-    			<div class="frame-2-bot"> 
+                <div class="pad-14"></div>
+                <div class="frame-3-top">
+                <span id="geleverdDalHeader" class="text-3">vandaag</span>
+                </div>
+                <div class="frame-2-bot"> 
                     <div title="<?php echo strIdx( 41 );?>">
                         <i class="text-4 fab fa-gripfire"></i>&nbsp;<span id="verbruikGasDag" class="text-4"></span><span class="text-4"> m<sup>3</sup></span><br>
                     </div>
                     <div title="<?php echo strIdx( 48 );?>">
                         <i class="pad-6 text-4 fas fa-euro-sign"></i>&nbsp;<span id="verbruikGasKosten" class="text-4"></span>
                     </div>
-    			</div>
-    			<div class="pad-14"></div>
-				<div id="gasVoorspelling" style="display: none">
-					<div class="frame-3-top">
-    				<span class="text-24 color-contrast-1">voorspelling actief</span>
-    				</div>
-    				<div class="frame-2-bot"> 
-						<i class="text-23 color-warning fab fa-gripfire"></i>&nbsp;<span class="text-4">Als de gaswaarde voor het huidig uur nog niet bekend is dan wordt de volgende waarde geschat.</span><br>
-    				</div>
-				</div>
-    		</div>
-    		<div class="pos-49">
-    		    <div class="frame-3-top">
-    			<span class="text-3">gas verbruikt</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<div id="actGasMeterGrafiekVerbruikt" class="pos-4"></div>
-    			</div>		
-    		</div>
-    	</div>	
+                </div>
+                <div class="pad-14"></div>
+                <div id="gasVoorspelling" style="display: none">
+                    <div class="frame-3-top">
+                    <span class="text-24 color-contrast-1">voorspelling actief</span>
+                    </div>
+                    <div class="frame-2-bot"> 
+                        <i class="text-23 color-warning fab fa-gripfire"></i>&nbsp;<span class="text-4">Als de gaswaarde voor het huidig uur nog niet bekend is dan wordt de volgende waarde geschat.</span><br>
+                    </div>
+                </div>
+            </div>
+            <div class="pos-49">
+                <div class="frame-3-top">
+                <span class="text-3">gas verbruikt</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <div id="actGasMeterGrafiekVerbruikt" class="pos-4"></div>
+                </div>        
+            </div>
+        </div>    
     </div>
 </div>
 <script>

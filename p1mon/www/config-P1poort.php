@@ -62,12 +62,12 @@ if( isset($_POST["gas_prefix_list"]) ) {
 }
 
 if ( isset($_POST["crc"]) ) { 
-	if ( $err_cnt == -1 ) $err_cnt=0;
-	if ($_POST["crc"] == '1' ) {
-		if ( updateConfigDb("update config set parameter = '1' where ID = 45")) $err_cnt += 1;
-	} else {
-		if ( updateConfigDb("update config set parameter = '0' where ID = 45")) $err_cnt += 1;
-	}
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ($_POST["crc"] == '1' ) {
+        if ( updateConfigDb("update config set parameter = '1' where ID = 45")) $err_cnt += 1;
+    } else {
+        if ( updateConfigDb("update config set parameter = '0' where ID = 45")) $err_cnt += 1;
+    }
 }
 
 if( isset($_POST["day_night_mode"]) ) {
@@ -281,14 +281,14 @@ function readJsonApiConfiguration(){
 function readJsonApiStatus(){ 
     $.getScript( "./api/v1/status", function( data, textStatus, jqxhr ) {
         try {
-	        var jsondata = JSON.parse(data); 
-	
-	        for (var j=91;  j < jsondata.length; j++){  
-		        // console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
-		        if ( jsondata[j][0] == 92 ) {
-			        $('#ser_device').text( jsondata[j][1] );
-			        break; // only one item needed
-		        }
+            var jsondata = JSON.parse(data); 
+    
+            for (var j=91;  j < jsondata.length; j++){  
+                // console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
+                if ( jsondata[j][0] == 92 ) {
+                    $('#ser_device').text( jsondata[j][1] );
+                    break; // only one item needed
+                }
             }
         } catch(err) {
             console.log( err )
@@ -299,109 +299,105 @@ function readJsonApiStatus(){
 
 function LoadData() {
     clearTimeout(initloadtimer);
-    //readJsonDataStatus();
     readJsonApiConfiguration();
     readJsonApiStatus();
     initloadtimer = setInterval(function(){LoadData();}, 3000);
 }
 
 $(function () {
-	LoadData();
+    LoadData();
 });
 
 </script>
-  <div class="top-wrapper">
-            <div class="content-wrapper">
-                 <?php page_header();?>
-            </div>
-        </div>
-		
+
+        <?php page_header();?>
+
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">
                 <!-- header 2 -->
                <?php pageclock(); ?>
             </div>
-			 <?php config_buttons(0);?>
+             <?php config_buttons(0);?>
         </div> <!-- end top wrapper-2 -->
-		
-		<div class="mid-section">
-			<div class="left-wrapper-config"> <!-- left block -->
-				<?php menu_control(6);?>
-			</div>
-			
-			<div id="right-wrapper-config"> <!-- right block -->
-			<!-- inner block right part of screen -->
-				<div id="right-wrapper-config-left-2">
-					<!-- start of content -->
-					<form name="formvalues" id="formvalues" method="POST">
-						
-						<div class="frame-4-top">
-							<span class="text-15">seriële instellingen</span>
-						</div>
-						<div class="frame-4-bot">
-							<div class="float-left">
-								<i class="text-10 pad-7 fas fa-download"></i>
-								<label class="text-10" >baudrate</label>
-								<p class="p-1"></p>
-								<i class="text-10 pad-8 fas fa-download"></i>
-								<label class="text-10">byte size</label> 
-								<p class="p-1"></p>
-								<i class="text-10 pad-9 fas fa-download"></i>
-								<label class="text-10">parity</label> 
-								<p class="p-1"></p>
-								<i class="text-10 pad-8 fas fa-download"></i>
-								<label class="text-10">stopbits</label> 
-							</div>
-							<div class="float-left pad-1">
-								<select class="select-1 color-select color-input-back cursor-pointer" name="baudrate_list" id="baudrate_list">
-									<?php makeSelector(7);?>
-								</select>
-								<p class="p-1"></p>
-						
-								<select class="select-1 color-select color-input-back cursor-pointer" name="bytesize_list" id="bytesize_list">
-									<?php makeSelector(8);?>
-								</select>
-								<p class="p-1"></p>
-								<select class="select-1 color-select color-input-back cursor-pointer" name="parity_list" id="parity_list">
-									<?php makeSelector(9);?>
-								</select>
-								<p class="p-1"></p>
-								<select class="select-1 color-select color-input-back cursor-pointer" name="stopbit_list" id="stopbit_list">
-									<?php makeSelector(10);?>
-								</select>
-							</div>
+        
+        <div class="mid-section">
+            <div class="left-wrapper-config"> <!-- left block -->
+                <?php menu_control(6);?>
+            </div>
+            
+            <div id="right-wrapper-config"> <!-- right block -->
+            <!-- inner block right part of screen -->
+                <div id="right-wrapper-config-left-2">
+                    <!-- start of content -->
+                    <form name="formvalues" id="formvalues" method="POST">
+                        
+                        <div class="frame-4-top">
+                            <span class="text-15">seriële instellingen</span>
+                        </div>
+                        <div class="frame-4-bot">
+                            <div class="float-left">
+                                <i class="text-10 pad-7 fas fa-download"></i>
+                                <label class="text-10" >baudrate</label>
+                                <p class="p-1"></p>
+                                <i class="text-10 pad-8 fas fa-download"></i>
+                                <label class="text-10">byte size</label> 
+                                <p class="p-1"></p>
+                                <i class="text-10 pad-9 fas fa-download"></i>
+                                <label class="text-10">parity</label> 
+                                <p class="p-1"></p>
+                                <i class="text-10 pad-8 fas fa-download"></i>
+                                <label class="text-10">stopbits</label> 
+                            </div>
+                            <div class="float-left pad-1">
+                                <select class="select-1 color-select color-input-back cursor-pointer" name="baudrate_list" id="baudrate_list">
+                                    <?php makeSelector(7);?>
+                                </select>
+                                <p class="p-1"></p>
+                        
+                                <select class="select-1 color-select color-input-back cursor-pointer" name="bytesize_list" id="bytesize_list">
+                                    <?php makeSelector(8);?>
+                                </select>
+                                <p class="p-1"></p>
+                                <select class="select-1 color-select color-input-back cursor-pointer" name="parity_list" id="parity_list">
+                                    <?php makeSelector(9);?>
+                                </select>
+                                <p class="p-1"></p>
+                                <select class="select-1 color-select color-input-back cursor-pointer" name="stopbit_list" id="stopbit_list">
+                                    <?php makeSelector(10);?>
+                                </select>
+                            </div>
                             
-						</div>
+                        </div>
                        
-						<p></p>
-						<div class="frame-4-top">
-							<span class="text-15">status</span>
-						</div>
-						<div class="frame-4-bot">
+                        <p></p>
+                        <div class="frame-4-top">
+                            <span class="text-15">status</span>
+                        </div>
+                        <div class="frame-4-bot">
                         <div class="text-10">Seriële device in gebruik:&nbsp;<span id="ser_device"></span></div>
                             <br>
-							<div class="float-left">
-								<div class="float-left pad-10">
-									<i style="display:none" id="serial_ok"  class="color-ok fas fa-3x fa-check-square" title="<?php strIdx(2);?>"></i> 
-									<i style="display:none" id="serial_nok" class="color-error fas fa-3x fa-exclamation-triangle" title="<?php strIdx(2);?>"></i> 
-								</div> 
-								<div>
-									<label style="display:none" id="serial_ok_label" class="float-left text-10" >&nbsp;&nbsp;&nbsp;&nbsp;in orde</label>
-									<label style="display:none" id="serial_nok_label" class="float-left text-10" >&nbsp;geen data</label>
-								</div>
-							</div>
-						
-							<div class="pos-33 float-right text-10">
-								<?php echo strIdx(2);?>
-							</div>
+                            <div class="float-left">
+                                <div class="float-left pad-10">
+                                    <i style="display:none" id="serial_ok"  class="color-ok fas fa-3x fa-check-square" title="<?php strIdx(2);?>"></i> 
+                                    <i style="display:none" id="serial_nok" class="color-error fas fa-3x fa-exclamation-triangle" title="<?php strIdx(2);?>"></i> 
+                                </div> 
+                                <div>
+                                    <label style="display:none" id="serial_ok_label" class="float-left text-10" >&nbsp;&nbsp;&nbsp;&nbsp;in orde</label>
+                                    <label style="display:none" id="serial_nok_label" class="float-left text-10" >&nbsp;geen data</label>
+                                </div>
+                            </div>
+                        
+                            <div class="pos-33 float-right text-10">
+                                <?php echo strIdx(2);?>
+                            </div>
 
-						</div>
+                        </div>
                         
                         <p></p>
-						<div class="frame-4-top">
-							<span class="text-15">P1 telegram</span>
-						</div>
-						<div class="frame-4-bot">
+                        <div class="frame-4-top">
+                            <span class="text-15">P1 telegram</span>
+                        </div>
+                        <div class="frame-4-bot">
                             <div class="float-left">
                                 <div class="pad-20">
                                     <i class="text-10 fas fa-cogs"></i>
@@ -421,43 +417,43 @@ $(function () {
                             
                             <div class="float-left pad-19">
                                 <select class="select-1 color-select color-input-back cursor-pointer" name="gas_prefix_list" id="gas_prefix_list">
-									<?php makeSelector(6);?>
-								</select>
-								
+                                    <?php makeSelector(6);?>
+                                </select>
+                                
                                 <div>
-									<input class="cursor-pointer" name="crc" type="radio" value="1" <?php if ( config_read(45) == 1 ) { echo 'checked'; }?>>Aan
-									<input class="cursor-pointer" name="crc" type="radio" value="0" <?php if ( config_read(45) == 0 ) { echo 'checked'; }?>>Uit
+                                    <input class="cursor-pointer" name="crc" type="radio" value="1" <?php if ( config_read(45) == 1 ) { echo 'checked'; }?>>Aan
+                                    <input class="cursor-pointer" name="crc" type="radio" value="0" <?php if ( config_read(45) == 0 ) { echo 'checked'; }?>>Uit
                                 </div>
                                 
                                 <select class="select-2 color-select color-input-back cursor-pointer" name="day_night_mode" id="day_night_mode">
-									<?php makeSelector(5);?>
-								</select>
+                                    <?php makeSelector(5);?>
+                                </select>
                             </div>
 
                         </div>
                         
 
-						<!-- placeholder variables for session termination -->
-						<input type="hidden" name="logout" id="logout" value="">
-					</form>
-				</div>
-				
-				<div id="right-wrapper-config-right-2">
-					<div class="frame-4-top">
-						<span class="text-15">hulp</span>
-					</div>
-					<div class="frame-4-bot text-10">	
-						<?php echo strIdx(1);?>
+                        <!-- placeholder variables for session termination -->
+                        <input type="hidden" name="logout" id="logout" value="">
+                    </form>
+                </div>
+                
+                <div id="right-wrapper-config-right-2">
+                    <div class="frame-4-top">
+                        <span class="text-15">hulp</span>
+                    </div>
+                    <div class="frame-4-bot text-10">    
+                        <?php echo strIdx(1);?>
                         <?php echo strIdx(27);?>
                         <br><br>
                         <?php echo strIdx(29);?>
                         <br><br>
                         <?php echo strIdx(64);?>
-					</div>
-				</div>
-			</div>	
-			<!-- end inner block right part of screen -->
-	</div>	
-	<?php echo autoLogout(); ?>
+                    </div>
+                </div>
+            </div>    
+            <!-- end inner block right part of screen -->
+    </div>    
+    <?php echo autoLogout(); ?>
 </body>
 </html>

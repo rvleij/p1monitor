@@ -2,7 +2,6 @@
 import argparse
 import const
 import inspect
-#import grp
 import glob
 import os
 import pwd

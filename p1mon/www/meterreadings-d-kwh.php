@@ -387,7 +387,7 @@ function createMeterReadingsChart() {
       data: productionKwhHigh,
     },
     {
-	  yAxis: 0,
+      yAxis: 0,
       dashStyle: 'ShortDashDotDot',
       visible: GseriesVisibilty[5],
       showInNavigator: true,
@@ -397,7 +397,7 @@ function createMeterReadingsChart() {
       data: productionKwhTotal,
     },
     {
-	  yAxis: 0,
+      yAxis: 0,
       visible: GseriesVisibilty[6],
       showInNavigator: true,
       name: 'bruto dal geleverd',
@@ -533,11 +533,8 @@ $(function() {
 </script>
 </head>
 <body title="<?php echo strIdx( 99 ); #PARAMETER ?>"> 
-<div class="top-wrapper">
-    <div class="content-wrapper">
-        <?php page_header();?>    
-    </div>
-</div>
+
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">
@@ -556,12 +553,12 @@ $(function() {
     </div> 
     <div class="mid-content-2 pad-13">
     <!-- links -->
-    	<div class="frame-2-top">
-    		<span class="text-2">meterstanden per dag</span>
-    	</div>
-    	<div class="frame-2-bot"> 
-    	<div id="meterReadingChart" style="width:100%; height:480px;"></div>	
-    	</div>
+        <div class="frame-2-top">
+            <span class="text-2">meterstanden per dag</span>
+        </div>
+        <div class="frame-2-bot"> 
+        <div id="meterReadingChart" style="width:100%; height:480px;"></div>    
+        </div>
 </div>
 </div>
 <div id="loading-data"><img src="./img/ajax-loader.gif" alt="Even geduld aub." height="15" width="128" /></div>   

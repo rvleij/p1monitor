@@ -102,34 +102,34 @@ function readJsonApiHistoryHour(){
             item[1] = item[1]*1000; // highchart likes millisecs.
             dataHourGasBuf.push ( [item[1], item[10] ]);
         } 
-		currentGasUsage =  dataHourGasBuf[jsondata.length-1][1]
+        currentGasUsage =  dataHourGasBuf[jsondata.length-1][1]
         //console.log( "currentGasUsage = "+ currentGasUsage  );
 
-		//console.log( "gaugeDataGasVerbruik = "+ gaugeDataGasVerbruik  );
-		//console.log( "gaugeDataGasVerbruik[0]= "+ gaugeDataGasVerbruik[1] );
-		
-		//gaugeDataGasVerbruik[1] = 0;
+        //console.log( "gaugeDataGasVerbruik = "+ gaugeDataGasVerbruik  );
+        //console.log( "gaugeDataGasVerbruik[0]= "+ gaugeDataGasVerbruik[1] );
+        
+        //gaugeDataGasVerbruik[1] = 0;
         //console.log ( "currentGasUsage = " + currentGasUsage )
-		if (currentGasUsage == 0 && predictionInOn == 1 ) {
-			if ( dataHourGasBuf.length > 3 ) { 
-				//console.log( "currentGasUsage =aangepast, voorspelling actief." )
-				Gaverage_gas_value = (
+        if (currentGasUsage == 0 && predictionInOn == 1 ) {
+            if ( dataHourGasBuf.length > 3 ) { 
+                //console.log( "currentGasUsage =aangepast, voorspelling actief." )
+                Gaverage_gas_value = (
                     dataHourGasBuf[dataHourGasBuf.length-2][1] + 
                     dataHourGasBuf[dataHourGasBuf.length-3][1] + 
                     dataHourGasBuf[dataHourGasBuf.length-4][1]) / 3;
-				
-				if ( Gaverage_gas_value > 0 ) {
+                
+                if ( Gaverage_gas_value > 0 ) {
                     currentGasUsage = Gaverage_gas_value;
-					showStuff('gasVoorspelling');
-				 } else {
+                    showStuff('gasVoorspelling');
+                 } else {
                     hideStuff('gasVoorspelling');
                     Gaverage_gas_value = 0;
-				 }
-				} 
-			} else {
+                 }
+                } 
+            } else {
                     hideStuff('gasVoorspelling');
                     Gaverage_gas_value = 0;
-			}
+            }
 
             //currentGasUsage = Number.parseFloat( parseFloat( jsondata[j][1] ).toFixed(1) );
 
@@ -518,24 +518,20 @@ $(function () {
     secs = 0;
     DataLoop10Sec(); 
 });
-     
-        
+
+
 </script>
     </head>
     <body>
 
-        <div class="top-wrapper">
-            <div class="content-wrapper">
-                <?php page_header();?>
-            </div>
-        </div>
+        <?php page_header();?>
 
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">
                 <!-- header 2 --> 
-				 <?php pageclock(); ?>
-				 <?php page_menu_header_actual(2); ?>
-				 <?php weather_info(); ?>
+                 <?php pageclock(); ?>
+                 <?php page_menu_header_actual(2); ?>
+                 <?php weather_info(); ?>
             </div>
         </div>
 

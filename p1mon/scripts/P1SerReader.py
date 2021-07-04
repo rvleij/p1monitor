@@ -87,7 +87,7 @@ DUMMY_GAS_MODE_2421    = False ######### DEZE OP FALSE ZETTEN BIJ PRODUCTIE CODE
 DUMMY_GAS_MODE_2430    = False ######### DEZE OP FALSE ZETTEN BIJ PRODUCTIE CODE!!!!
 DUMMY_GAS_MODE_2423    = False ######### DEZE OP FALSE ZETTEN BIJ PRODUCTIE CODE!!!!
 
-DUMMY_GAS_TIME_ELAPSED = 3600 # sec. die verstreken moet zijn voor volgend gas record in dummy mode.
+DUMMY_GAS_TIME_ELAPSED = 300 # sec. die verstreken moet zijn voor volgend gas record in dummy mode.
 
 #Set COM port config
 ser1 = serial.Serial()
@@ -1358,7 +1358,8 @@ def getCurrentWatermeterCount():
             watermeters_count_total = round( float(verbr_in_m3_total), 3 )
             #print ( watermeters_count_total )
     except Exception as e:
-        flog.warning( inspect.stack()[0][3] + ": probleem bij het lezen van de watermeter stand -> " + str(e.args[0]) )
+        pass #stop without complaining
+        #flog.warning( inspect.stack()[0][3] + ": probleem bij het lezen van de watermeter stand -> " + str(e.args[0]) )
 
 def saveExit(signum, frame):
     #setFileFlags()

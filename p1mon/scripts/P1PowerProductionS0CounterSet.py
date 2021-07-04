@@ -90,6 +90,8 @@ def Main(argv):
     writeLineToStatusFile( msg_str )
     #timestamp = findRecordByTimestamp( config_timestamp, sqldb.INDEX_MINUTE )
 
+    setCounterToZero( config_timestamp )
+
     flog.info( inspect.stack()[0][3]+": minuten tabel wordt verwerkt.")
     procesRecordByPeriod( config_timestamp, config_high_metervalue ,config_low_metervalue, sqldb.INDEX_MINUTE , "minuten" )
     flog.info( inspect.stack()[0][3]+": uren tabel wordt verwerkt.")
@@ -126,7 +128,26 @@ def procesRecordByPeriod( timestamp , config_high_metervalue ,config_low_meterva
         msg_str = "geen records gevonden in de " + label + " tabel."
         writeLineToStatusFile( msg_str )
 
+#########################################################
+# de teller worden voor de aanpassingen op nul gezet om #
+# dubbelingen te voorkomen                              #
+#########################################################
+def setCounterToZero( timestamp ):
+    flog.info( inspect.stack()[0][3]+": gestart met  tijdstip "  + str(timestamp) )
+    try:
+        sql = "update " + const.DB_POWERPRODUCTION_TAB + " set \
+            PRODUCTION_KWH_HIGH_TOTAL = 0,\
+            PRODUCTION_KWH_LOW_TOTAL  = 0,\
+            PRODUCTION_KWH_TOTAL      = 0\
+            where POWER_SOURCE_ID = 1 and timestamp >= '" + str( timestamp ) + "'"
+        power_production_db.excute( sql )
+        msg_str = "Records worden op 0 gezet voor de periode vanaf " + str( timestamp )
+        writeLineToStatusFile( msg_str )
+        flog.info( msg_str )
+    except Exception as e:
+        flog.warning( inspect.stack()[0][3]+": sql probleem voor het op nul zeten van de tellers voor timestamp " + str( timestamp ) +  " -> " + str(e) )
 
+ 
 ########################################################
 # Add the entered offset to the high, low and total    #
 # counters, use period to select min, hour,day, month  #
@@ -167,7 +188,7 @@ def updateCounterRecords( timestamp , max_timestamp, config_high_metervalue ,con
         flog.warning( inspect.stack()[0][3]+": onbekend of verkeerd periode gekozen." )
         return None, None
 
-    # debuf code relativedelta
+    # debug code relativedelta
     """"
     while True:
         ts_next = datetime.strptime( str(ts_next), "%Y-%m-%d %H:%M:%S") + timestamp_delta
@@ -189,7 +210,7 @@ def updateCounterRecords( timestamp , max_timestamp, config_high_metervalue ,con
 
             # update the record whith the new values.
             try:
-                sql_update = "update powerproduction set" +\
+                sql_update = "update " + const.DB_POWERPRODUCTION_TAB + " set" +\
                 " PRODUCTION_KWH_HIGH_TOTAL = " + str(high_meter_value) + \
                 ", PRODUCTION_KWH_LOW_TOTAL = " + str(low_meter_value) + \
                 ", PRODUCTION_KWH_TOTAL = "     + str(high_meter_value +low_meter_value ) + \

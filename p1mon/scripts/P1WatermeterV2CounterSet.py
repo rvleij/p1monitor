@@ -87,6 +87,8 @@ def Main(argv):
     writeLineToStatusFile( msg_str )
     #timestamp = findRecordByTimestamp( config_timestamp, sqldb.INDEX_MINUTE )
 
+    setCounterToZero( config_timestamp )
+
     flog.info( inspect.stack()[0][3]+": minuten tabel wordt verwerkt.")
     procesRecordByPeriod( config_timestamp, verbr_m3_reset_value , sqldb.INDEX_MINUTE, "minuten" )
     flog.info( inspect.stack()[0][3]+": uren tabel wordt verwerkt.")
@@ -123,6 +125,27 @@ def procesRecordByPeriod( timestamp, verbr_m3_reset_value, period, label ):
         msg_str = "geen records gevonden in de " + label + " tabel."
         writeLineToStatusFile( msg_str )
 
+
+#########################################################
+# de teller worden voor de aanpassingen op nul gezet om #
+# dubbelingen te voorkomen                              #
+#########################################################
+def setCounterToZero( timestamp ):
+    flog.info( inspect.stack()[0][3]+": gestart met  tijdstip "  + str(timestamp) )
+    try:
+
+        sql = "update " + const.DB_WATERMETERV2_TAB + " set \
+            VERBR_IN_M3_TOTAAL = 0 \
+            where timestamp >= '" + str( timestamp ) + "'"
+
+        watermeter_db.excute( sql )
+        msg_str = "Records worden op 0 gezet voor de periode vanaf " + str( timestamp )
+        writeLineToStatusFile( msg_str )
+        flog.info( msg_str )
+    except Exception as e:
+        flog.warning( inspect.stack()[0][3]+": sql probleem voor het op nul zeten van de tellers voor timestamp " + str( timestamp ) +  " -> " + str(e) )
+
+
 ########################################################
 # Add the entered offset to the m3 value               #
 # counters, use period to select min, hour,day, month  #
@@ -131,7 +154,11 @@ def procesRecordByPeriod( timestamp, verbr_m3_reset_value, period, label ):
 def updateCounterRecords( timestamp , max_timestamp, verbr_m3_reset_value, period ):
 
     verbr_m3_reset_value = float( verbr_m3_reset_value )
-    ts_next              = datetime.strptime( timestamp, "%Y-%m-%d %H:%M:%S")
+    try:
+        ts_next = datetime.strptime( timestamp, "%Y-%m-%d %H:%M:%S")
+    except Exception as e:
+        flog.warning( inspect.stack()[0][3]+": waarschuwing voor timestamp " + str(timestamp) +  " -> " + str(e) + " verwerking gestopt voor deze periode. " )
+        return None, None
 
     if period == sqldb.INDEX_MINUTE:
         substr_index = 17
@@ -306,7 +333,7 @@ if __name__ == "__main__":
         os.umask( 0o002 )
         flog = fileLogger( const.DIR_FILELOG + prgname + ".log" , prgname)    
         #### aanpassen bij productie
-        flog.setLevel( logging.DEBUG )
+        flog.setLevel( logging.INFO )
         flog.consoleOutputOn( True )
 
         status_fp = open( const.FILE_WATERMETER_CNT_STATUS, "w")

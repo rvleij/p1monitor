@@ -14,7 +14,7 @@ import os
 import paho.mqtt.client as mqtt
 from datetime import datetime
 
-from sqldb import configDB, rtStatusDb, SqlDb1, WatermeterDBV2, currentWeatherDB, temperatureDB
+from sqldb import configDB, rtStatusDb, SqlDb1, WatermeterDBV2, currentWeatherDB, temperatureDB, powerProductionDB
 from logger import fileLogger, logging
 from util import setFile2user, getUtcTime
 #from makeLocalTimeString import makeLocalTimeString
@@ -30,6 +30,7 @@ e_db_serial         = SqlDb1()
 watermeter_db       = WatermeterDBV2()
 weer_db             = currentWeatherDB()
 temperature_db      = temperatureDB()
+power_production_db = powerProductionDB()
 
 # Status velden.
 # timestamp process gestart                           DB status index =  95
@@ -41,6 +42,7 @@ mqtt_topics_watermeter          = None
 mqtt_topics_weather             = None
 mqtt_topics_indoor_temperature  = None
 mqtt_topics_phase               = None
+mqtt_topics_powerproduction     = None
 
 mqtt_para = {
     'clientname':'p1monitor',                       # client name  DB config index 105
@@ -56,7 +58,8 @@ mqtt_para = {
     'watermeterprocessedtimestamp': '',             # timestamp of latest time when the publish was performed.
     'weatherprocessedtimestamp': '',                # timestamp of latest time when the publish was performed.
     'indoortemperatureprocessedtimestamp': '',      # timestamp of latest time when the publish was performed.
-    'phaseprocessedtimestamp': '',                  # timestamp of latest time when the publish was performed. 
+    'phaseprocessedtimestamp': '',                  # timestamp of latest time when the publish was performed.
+    'powerproductionprocessedtimestamp': '',        # timestamp of latest time when the publish was performed.
     'brokerconnectionstatustext': 'onbekend',       # status of the broker connection, text
     'brokerconnectionisok': False,                  # status of the broker connection, flag
     'reconnecttimeoute': 30,                        # sleeptime before trying a reconnect.
@@ -65,6 +68,7 @@ mqtt_para = {
     'weatherpublishisactive': False,                # publish on or off DB config index 116
     'indoortemperaturepublishisactive': False,      # publish on or off DB config index 117
     'phasepublishisactive': False,                  # publish on or off DB config index 120
+    'powerproductionpublishisactive': False,        # publish on or off DB config index 136
     'anypublishisactive': False,                    # publish on or off for all publish.
 }
 
@@ -134,8 +138,27 @@ mqtt_payload_phase = {
     13: int( 0 ),
 }
 
+mqtt_payload_powerproduction = {
+    0: str( '' ),
+    1: int( 0 ),
+    2: float( 0 ),
+    3: float( 0 ),
+    4: int( 0 ),
+    5: int( 0 ),
+    6: float( 0 ),
+    7: float( 0 ),
+    8: float( 0 ),
+    9: float( 0 )
+}
+
 def checkActiveState():
     global mqtt_para
+
+    _id, parameter, _label = config_db.strget( 136, flog )
+    if int(parameter) == 1:
+        mqtt_para['powerproductionpublishisactive'] = True
+    else:
+        mqtt_para['powerproductionpublishisactive'] = False
 
     _id, parameter, _label = config_db.strget( 120, flog )
     if int(parameter) == 1:
@@ -172,9 +195,8 @@ def checkActiveState():
     
     #print ( mqtt_para )
     
-
 def setConfigFromDb():
-    global mqtt_para, mqtt_topics_smartmeter, mqtt_topics_watermeter, mqtt_topics_weather, mqtt_topics_indoor_temperature, mqtt_topics_phase
+    global mqtt_para, mqtt_topics_smartmeter, mqtt_topics_watermeter, mqtt_topics_weather, mqtt_topics_indoor_temperature, mqtt_topics_phase, mqtt_topics_powerproduction
 
     try:
         _id, parameter, _label = config_db.strget( 105, flog )
@@ -289,6 +311,19 @@ def setConfigFromDb():
         13: mqtt_para['topicprefix'] + '/' + os.path.basename( apiconst.ROUTE_PHASE )  + '/' + apiconst.JSON_API_PHS_L3_A.lower(),
     }
 
+    mqtt_topics_powerproduction = {
+        0:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_TS_LCL.lower(),
+        1:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_TS_LCL_UTC.lower(),
+        2:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_KWH_H.lower(),
+        3:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_KWH_L.lower(),
+        4:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_PULS_CNT_H.lower(),
+        5:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_PULS_CNT_L.lower(),
+        6:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_KWH_TOTAL_H.lower(),
+        7:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_KWH_TOTAL_L.lower(),
+        8:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_KWH_TOTAL.lower(),
+        9:  mqtt_para['topicprefix'] + '/' + apiconst.BASE_POWERPRODUCTION_S0  + '/minute'.lower()  + '/' + apiconst.JSON_API_PROD_W_PSEUDO.lower(),
+    }
+
     #flog.info (inspect.stack()[0][3]+": MQTT parameters :" + str( mqtt_para ) )
 
 # when the minimal set of broker paramters are set return True or False
@@ -303,22 +338,14 @@ def minimalBrokerSettingsAvailable():
         flog.debug(inspect.stack()[0][3]+":broker host poort en naam zijn gezet.")
         return True
     except Exception as e:
-        flog.critical( inspect.stack()[0][3]+": Broker paramters niet te lezen! " + +str(e.args[0]))
+        flog.critical( inspect.stack()[0][3]+": Broker parameters niet te lezen! " + +str(e.args[0]))
         return True # don't fail on checks
 
 def Main(argv): 
     flog.info("Start van programma.")
     global mqtt_para, mqtt_client
 
-    # open van status database      
-    try:    
-        rt_status_db.init(const.FILE_DB_STATUS,const.DB_STATUS_TAB)
-    except Exception as e:
-        flog.critical( inspect.stack()[0][3]+": Database niet te openen(1)."+const.FILE_DB_STATUS+") melding:"+str(e.args[0]) )
-        sys.exit(1)
-    flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_STATUS_TAB+" succesvol geopend.")
-
-    # open van config database      
+    # open van config database
     try:
         config_db.init(const.FILE_DB_CONFIG,const.DB_CONFIG_TAB)
     except Exception as e:
@@ -326,14 +353,23 @@ def Main(argv):
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_CONFIG_TAB+" succesvol geopend.")
   
-    # open van seriele database      
+    runCheck()
+
+    # open van status database
+    try:    
+        rt_status_db.init(const.FILE_DB_STATUS,const.DB_STATUS_TAB)
+    except Exception as e:
+        flog.critical( inspect.stack()[0][3]+": Database niet te openen(1)."+const.FILE_DB_STATUS+") melding:"+str(e.args[0]) )
+        sys.exit(1)
+    flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_STATUS_TAB+" succesvol geopend.")
+
+    # open van seriele database
     try:
         e_db_serial.init(const.FILE_DB_E_FILENAME ,const.DB_SERIAL_TAB)        
     except Exception as e:
         flog.critical( inspect.stack()[0][3] + " database niet te openen(3)."+const.FILE_DB_E_FILENAME+") melding:" + str(e.args[0]) )
         sys.exit(1)
     flog.info( inspect.stack()[0][3] + ": database tabel "+const.DB_SERIAL_TAB+" succesvol geopend." )
-
 
     # open van watermeter database
     try:    
@@ -343,17 +379,7 @@ def Main(argv):
         sys.exit(1)
     flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETERV2_TAB + " succesvol geopend." )
 
-    """
-    # open van watermeter databases
-    try:    
-        watermeter_db_uur.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
-    except Exception as e:
-        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(4)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
-        sys.exit(1)
-    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_WATERMETER_UUR_TAB + " succesvol geopend." )
-    """
-
-     # open van weer database voor huidige weer
+    # open van weer database voor huidige weer
     try:
         weer_db.init(const.FILE_DB_WEATHER ,const.DB_WEATHER_TAB)
     except Exception as e:
@@ -369,6 +395,15 @@ def Main(argv):
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel "+const.DB_TEMPERATUUR_TAB +" succesvol geopend.")
     
+    # open van power production database
+    try:    
+        power_production_db.init( const.FILE_DB_POWERPRODUCTION , const.DB_POWERPRODUCTION_TAB, flog )
+    except Exception as e:
+        flog.critical( inspect.stack()[0][3] + ": Database niet te openen(3)." + const.FILE_DB_POWERPRODUCTION + " melding:" + str(e.args[0]) )
+        sys.exit(1)
+    flog.info( inspect.stack()[0][3] + ": database tabel " + const.DB_POWERPRODUCTION_TAB + " succesvol geopend." )
+
+
     # set proces gestart timestamp
     rt_status_db.timestamp( 95, flog )
 
@@ -381,6 +416,9 @@ def Main(argv):
     
     # INIT connect to the broker
     while True:
+
+        runCheck()
+
         #flog.setLevel( logging.DEBUG )
         if minimalBrokerSettingsAvailable() == False:
             time.sleep(60) # wait on valid setting, quitely.
@@ -398,7 +436,7 @@ def Main(argv):
             break
     
     while True:
-        
+
         if mqtt_para['brokerconnectionisok'] == False:  # try to reconnect 
             #flog.setLevel( logging.DEBUG )
             if minimalBrokerSettingsAvailable() == False:
@@ -446,6 +484,15 @@ def Main(argv):
             except Exception as e:
                 flog.warning(inspect.stack()[0][3]+": onverwachte fout bij smartmeter publish van melding:"+str(e))
 
+
+            #######################################################################
+            # Important to determine if we have to send data the timestamp when   #
+            # data is updated must be set in the status database by the process   #
+            # responsible for the processing.                                     #
+            # check the index in the lines like this                              #
+            # _id, timestamp, _label, _security = rt_status_db.strget( xx, flog ) #
+            #######################################################################
+
             # watermeter proceessing
             try:
                 #_id, parameter, _label = config_db.strget( 115, flog )
@@ -472,7 +519,7 @@ def Main(argv):
             except Exception as e:
                 flog.warning(inspect.stack()[0][3]+": onverwachte fout bij weer publish van melding:"+str(e))                
 
-             # indoor temperature processing
+            # indoor temperature processing
             try:
                 #_id, parameter, _label = config_db.strget( 117, flog )
                 if mqtt_para['indoortemperaturepublishisactive'] == True:  #is active
@@ -484,7 +531,19 @@ def Main(argv):
                             mqtt_para['indoortemperatureprocessedtimestamp'] = timestamp
             except Exception as e:
                 flog.warning(inspect.stack()[0][3]+": onverwachte fout bij binnen temperatuur publish van melding:"+str(e))
-            
+
+            # powerproduction processing
+            try:
+                if mqtt_para['powerproductionpublishisactive'] == True:  #is active
+                    _id, timestamp, _label, _security = rt_status_db.strget( 109, flog )
+                    if ( mqtt_para['powerproductionprocessedtimestamp'] ) != timestamp:
+                        getPayloadFromDB( mqtt_payload_powerproduction, power_production_db )
+                        if len( mqtt_payload_powerproduction[0] ) > 0: # only send when we have data
+                            mqttPublish( mqtt_client, mqtt_topics_powerproduction,  mqtt_payload_powerproduction )
+                            mqtt_para['powerproductionprocessedtimestamp'] = timestamp
+            except Exception as e:
+                flog.warning(inspect.stack()[0][3]+": onverwachte fout bij opgewekte energie publish van melding:"+str(e))
+
             # phase processing
             try:
                 #_id, parameter, _label = config_db.strget( 117, flog )
@@ -505,9 +564,26 @@ def Main(argv):
 
         checkActiveState() # controleer de DB op welke publish aan of uit staat
         if mqtt_para['anypublishisactive'] == False: # ga in langzame modes als alle publish uit staat.
-            time.sleep(30) #slow poll
+            runCheck()
+            time.sleep( 30 ) #slow poll
         else:
+            runCheck()
             time.sleep( 2 )
+
+#####################################################################
+# check if the programm is set as active otherwise stop the program #
+#####################################################################
+def runCheck():
+    flog.debug( inspect.stack()[0][3] + ": start van programma run check.")
+    #print ( int(time.time())%10 )
+    if (int(time.time())%10) > 2:
+        #print ("no check")
+        return # only do a check every 10 seconds
+    #print ("check")    
+    _id, run_status, _label = config_db.strget( 135, flog )
+    if int( run_status ) == 0: # stop process
+        flog.info( inspect.stack()[0][3] + ": programma is niet als actief geconfigureerd, programma wordt gestopt.")
+        stop()
 
 def makeTopicJsonFile():
     list_of_topics = []
@@ -520,7 +596,9 @@ def makeTopicJsonFile():
     if mqtt_para['indoortemperaturepublishisactive'] == True:
         topicToJson( mqtt_topics_indoor_temperature, list_of_topics ) 
     if mqtt_para['phasepublishisactive'] == True:
-        topicToJson( mqtt_topics_phase, list_of_topics ) 
+        topicToJson( mqtt_topics_phase, list_of_topics )
+    if mqtt_para['powerproductionpublishisactive'] == True:
+        topicToJson( mqtt_topics_powerproduction, list_of_topics )
 
     try:
         filename = const.FILE_MQTT_TOPICS
@@ -620,7 +698,7 @@ def checkBrokerConnection( rc ):
         flog.info( inspect.stack()[0][3] + ": " + mqtt_para['brokerconnectionstatustext'] )
         mqtt_para['brokerconnectionisok'] = True
     elif rc == mqtt.CONNACK_REFUSED_PROTOCOL_VERSION:
-        mqtt_para['brokerconnectionstatustext'] = 'connectie met broker gefaald, MQTT protocol niet ondersteund.'
+        mqtt_para['brokerconnectionstatustext'] = 'connectie met broker gefaald, MQTT protocol wordt niet ondersteunt.'
         flog.critical( inspect.stack()[0][3] + ": " + mqtt_para['brokerconnectionstatustext'] )
         mqtt_para['brokerconnectionisok'] = False
     elif rc == mqtt.CONNACK_REFUSED_IDENTIFIER_REJECTED:
@@ -675,7 +753,7 @@ def getPayloadFromDB( mqtt_payload, database ):
         flog.debug( inspect.stack()[0][3] + ": rec= " + str( rec ) )
         if rec != None:
             for i in range(0 , len(rec) ):
-                mqtt_payload[ i ] = rec[i]
+                mqtt_payload[i] = rec[i]
     except Exception as e:
         flog.warning( inspect.stack()[0][3]+": probleem met lezen van DB. " + str( e.args[0] ) )
 
@@ -697,6 +775,9 @@ def mqttPublish( client, topics,  payloads ):
     #flog.setLevel( logging.INFO )
 
 def saveExit(signum, frame):
+    stop()
+
+def stop():
     global mqtt_client
     if mqtt_client != None:
          closeMqtt()

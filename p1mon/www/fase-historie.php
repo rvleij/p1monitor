@@ -233,7 +233,7 @@ $(function () {
     screenSaver( <?php echo config_read(79);?> ); // to enable screensaver for this screen.
     
     centerPosition('#slider_dialog');
-    $('#slider_dialog_close').click(function() {	
+    $('#slider_dialog_close').click(function() {    
         hideStuff('slider_dialog');
         //console.log( slider.value );
         var redraw_flag = false;
@@ -437,11 +437,7 @@ function setButtonVisbilty() {
 
     <body>
 
-        <div class="top-wrapper">
-            <div class="content-wrapper">
-                <?php page_header();?>
-            </div>
-        </div>
+        <?php page_header();?>
 
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">

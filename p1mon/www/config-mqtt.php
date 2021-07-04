@@ -72,9 +72,9 @@ if ( isset($_POST["broker_user_name"]) ) {
 }
 
 if ( isset($_POST["broker_user_pw"]) ) { 
-	$input = trim($_POST["broker_user_pw"]);
-	$password = encodeString ($input, 'mqttclpw');
-	if ( $err_cnt == -1 ) $err_cnt=0;
+    $input = trim($_POST["broker_user_pw"]);
+    $password = encodeString ($input, 'mqttclpw');
+    if ( $err_cnt == -1 ) $err_cnt=0;
     if ( updateConfigDb("update config set parameter = '".$password."' where ID = 108")) $err_cnt += 1;
     $update_MQTT_setting_flag = True;
 }
@@ -143,6 +143,25 @@ if ( isset($_POST["publish_phase_data"]) ) {
     $update_MQTT_setting_flag = True;
 }
 
+if ( isset($_POST["publish_ownpowerproduction_data"]) ) { 
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ($_POST["publish_ownpowerproduction_data"] == '1' ) {
+        if ( updateConfigDb( "update config set parameter = '1' where ID = 136") )$err_cnt += 1;
+    } else {
+        if ( updateConfigDb( "update config set parameter = '0' where ID = 136") )$err_cnt += 1;
+    }
+    $update_MQTT_setting_flag = True;
+}
+
+
+if ( isset( $_POST["fs_rb_mqtt"] ) ) { //ok
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ( $_POST[ "fs_rb_mqtt" ] == '1' ) {
+        if ( updateConfigDb("update config set parameter = '1' where ID = 135") ) $err_cnt += 1;
+    } else {
+        if ( updateConfigDb("update config set parameter = '0' where ID = 135") ) $err_cnt += 1;
+    }
+}
 
 if ($update_MQTT_setting_flag == True) {
     updateConfigDb( "update config set parameter = '1' where ID = 118" );
@@ -224,8 +243,8 @@ function readJsonTopicList(){
             }
             htmlString = htmlString + "</ol>";
             $('#topic_list').html( htmlString );
-      	} catch(err) {}
-   	});
+          } catch(err) {}
+       });
     }
 
 
@@ -237,29 +256,26 @@ function LoadData() {
 }
 
 $(function () {
-	LoadData();
+    LoadData();
 });
 
 </script>
-  <div class="top-wrapper">
-            <div class="content-wrapper">
-                 <?php page_header();?>
-            </div>
-        </div>
-		
+
+        <?php page_header();?>
+
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">
                 <!-- header 2 -->
                <?php pageclock(); ?>
             </div>
-			 <?php config_buttons(0);?>
+             <?php config_buttons(0);?>
         </div> <!-- end top wrapper-2 -->
-		
-		<div class="mid-section">
-			<div class="left-wrapper-config"> <!-- left block -->
-				<?php menu_control( 14 );?>
-			</div>
-			
+        
+        <div class="mid-section">
+            <div class="left-wrapper-config"> <!-- left block -->
+                <?php menu_control( 14 );?>
+            </div>
+            
             <div id="right-wrapper-config"> <!-- right block -->
             <!-- inner block right part of screen -->
                 <div id="right-wrapper-config-left-4">
@@ -271,6 +287,9 @@ $(function () {
                         
                         <div class="frame-4-bot">
                             <div class="float-left">
+                                <i class="pad-7 text-10 fas fa-toggle-off"></i>
+                                <label class="text-10">MQTT programma is actief</label>
+                                <p class="p-1"></p>
                                 <i class="text-10 pad-7 fas fa-wrench"></i>
                                 <label class="text-10">client ID</label>
                                 <p class="p-1"></p>
@@ -316,6 +335,9 @@ $(function () {
                                 <i class="text-10 fas fa-toggle-off"></i>
                                 <label class="text-10">verzenden fase data</label>
                                 <p class="p-1"></p>
+                                <i class="text-10 fas fa-toggle-off"></i>
+                                <label class="text-10">verzenden opgewekte vermogen</label>
+                                <p class="p-1"></p>
                                 <br>
                                 <label class="text-10">laatst verstuurde bericht:</label>
                                 <p class="p-1"></p>
@@ -324,6 +346,11 @@ $(function () {
                             </div>
 
                             <div class="float-left pad-1">
+                                <div class='pad-14'>
+                                    <input class="cursor-pointer" id="fs_rb_mqtt_on"  name="fs_rb_mqtt" type="radio" value="1" <?php if ( config_read( 135 ) == 1 ) { echo 'checked'; }?>>Aan
+                                    <input class="cursor-pointer" id="fs_rb_mqtt_off" name="fs_rb_mqtt" type="radio" value="0" <?php if ( config_read( 135 ) == 0 ) { echo 'checked'; }?>>Uit
+                                </div>
+                                <p class="p-1"></p>
                                 <input class="input-14 color-settings color-input-back" id="client_id" name="client_id" type="text" value="<?php echo config_read( 105 );?>">
                                 <p class="p-1"></p>
                                 <input class="input-14 color-settings color-input-back" id="topic_prefix" name="topic_prefix" type="text" value="<?php echo config_read( 106 );?>">
@@ -339,7 +366,7 @@ $(function () {
 
                                 <div class="content-wrapper">
                                     <input class="input-14 color-settings color-input-back" id="broker_user_pw" name="broker_user_pw" type="password" value="<?php echo decodeString( 108, 'mqttclpw');?>">
-                                    <div id="broker_passwd" onclick="toggelPasswordVisibility('broker_user_pw')" class="float-right pad-33 cursor-pointer">	
+                                    <div id="broker_passwd" onclick="toggelPasswordVisibility('broker_user_pw')" class="float-right pad-33 cursor-pointer">    
                                         <span><i class="color-menu pad-7 fas fa-eye"></i></span>
                                     </div>
                                 </div>
@@ -381,6 +408,11 @@ $(function () {
                                     <input class="cursor-pointer" id="publish_phase_data_off" name="publish_phase_data" type="radio" value="0" <?php if ( config_read( 120 ) == 0 ) { echo 'checked'; }?>>Uit
                                 </div>
                                 <p class="p-1"></p>
+                                <div class=''>
+                                    <input class="cursor-pointer" id="publish_ownpowerproduction_data_on"  name="publish_ownpowerproduction_data" type="radio" value="1" <?php if ( config_read( 136 ) == 1 ) { echo 'checked'; }?>>Aan
+                                    <input class="cursor-pointer" id="publish_ownpowerproduction_data_off" name="publish_ownpowerproduction_data" type="radio" value="0" <?php if ( config_read( 136 ) == 0 ) { echo 'checked'; }?>>Uit
+                                </div>
+                                <p class="p-1"></p>
                                 <br>
                                 <label class="text-10"><span id="publish_timestamp"></span></label>
                                 <p class="p-1"></p>
@@ -406,11 +438,11 @@ $(function () {
                     <div class="frame-4-top">
                         <span class="text-15">hulp</span>
                     </div>
-                    <div class="frame-4-bot text-10">	
+                    <div class="frame-4-bot text-10">    
                         <?php echo strIdx( 76 );?>
                     </div>
                 </div>
-            </div>	
+            </div>    
             <!-- end inner block right part of screen -->
     </div>
     <script>
@@ -436,7 +468,7 @@ $(function() {
             //console.log ( errors );
           },
         errorPlacement: function(error, element) {
-        	$(this).addClass('error');
+            $(this).addClass('error');
             //console.log ( 'errorPlacement' );
             return false;  // will suppress error messages    
         }

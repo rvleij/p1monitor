@@ -25,8 +25,8 @@ from subprocess import check_output
 
 prgname = 'P1FtpCopy'
 fileprefix = 'P1BU-'
-config_db		= configDB()
-rt_status_db	= rtStatusDb()
+config_db        = configDB()
+rt_status_db    = rtStatusDb()
 
 # because of ea bug in sftlib we are now using shell comands to connect with FTSP (curl) 
 # this problem occured during the upgrade to buster and python 3.7 
@@ -82,27 +82,31 @@ def Main(argv):
     flog.debug(inspect.stack()[0][3]+": parameters uit de DB:"+str(ftp_para))
 
     parser = argparse.ArgumentParser(description="ftp....")
-    parser.add_argument('-u'	, '--user',         required=False)
-    parser.add_argument('-pw'	, '--password',     required=False)
-    parser.add_argument('-dir'	, '--directory',    required=False)
-    parser.add_argument('-srv'	, '--server',       required=False)
-    parser.add_argument('-fname', '--filename',     required=False)	
+    parser.add_argument('-u'    , '--user',         required=False)
+    parser.add_argument('-pw'    , '--password',     required=False)
+    parser.add_argument('-dir'    , '--directory',    required=False)
+    parser.add_argument('-srv'    , '--server',       required=False)
+    parser.add_argument('-fname', '--filename',     required=False)    
     parser.add_argument('-mfcnt', '--maxfilecount', required=False)
-    parser.add_argument('-pt'	, '--port',         required=False)
-    parser.add_argument('-ftps'	, '--ftps',         required=False, action="store_true") # flag only
-    parser.add_argument('-sftp'	, '--sftp',         required=False, action="store_true") # flag only
+    parser.add_argument('-pt'    , '--port',         required=False)
+    parser.add_argument('-ftps'    , '--ftps',         required=False, action="store_true") # flag only
+    parser.add_argument('-sftp'    , '--sftp',         required=False, action="store_true") # flag only
     parser.add_argument('-ftp'  , '--ftp',          required=False, action="store_true") # flag only
 
     args = parser.parse_args()
     if args.user != None:
         ftp_para['user'] = args.user
 
-    if args.password != None:	
+    if args.password != None:
         ftp_para['password'] = args.password
-    else: #decode password
-        #ftp_para['password'] = crypto3.p1Decrypt(ftp_para['password']).strip()
+        flog.debug( "password van commandline ontvangen -> " + ftp_para['password'] )
+    else: #decode password from database
         try:
             ftp_para['password'] = base64.standard_b64decode(crypto3.p1Decrypt(ftp_para['password'],'ftppw') ).decode('utf-8')
+            #  added by Aad
+            if ftp_para['password'] == '':
+                ftp_para['password'] = "''"
+                raise Exception(" wachtwoord is niet ingesteld.")
         except Exception as e:
             flog.error(inspect.stack()[0][3]+": password decodering gefaald. Decoded password=" +\
                 ftp_para['password']+" Gestopt. melding:" + str(e.args[0]) )
@@ -110,11 +114,20 @@ def Main(argv):
         flog.info("Password decryptie ok.")
         flog.debug("Decoded password = " + ftp_para['password'])
 
+
     if args.directory != None:
         ftp_para['directory'] = args.directory
 
     if args.server != None:
         ftp_para['server'] = args.server
+    else:
+        try:
+            if ftp_para['server'] == '':
+                ftp_para['server'] = "''"
+                raise Exception("server adres (IP adres of url) is niet ingesteld.")
+        except Exception as e:
+            flog.error(inspect.stack()[0][3]+": Gestopt, melding: " + str(e.args[0]) )
+            sys.exit(17)
 
     if args.filename != None:
         ftp_para['filename'] = args.filename
@@ -148,7 +161,7 @@ def Main(argv):
     if os.path.isfile(ftp_para['filename']) == False:
         rt_status_db.strset('fout: te kopieren bestand niet gevonden. Gestopt.',48,flog)
         flog.error(inspect.stack()[0][3]+": te kopieren bestand niet gevonden. Gestopt.")
-        sys.exit(17)	
+        sys.exit(17)    
 
     # do normal plain text FTP
     if int(ftp_para['ftp']) == 1:
@@ -163,7 +176,7 @@ def Main(argv):
         except Exception as e:
             rt_status_db.strset('fout: server antwoord: '+str(e.args[0])+' Gestopt.',48,flog)
             flog.error(inspect.stack()[0][3]+": FTP server antwoord: "+str(e.args[0])+" Gestopt.")
-            sys.exit(11)	
+            sys.exit(11)    
 
         rt_status_db.strset( "FTP transfer is succesvol gestopt.", 48, flog )
         rt_status_db.timestamp( 49,flog )
@@ -206,16 +219,15 @@ def Main(argv):
             flog.debug( inspect.stack()[0][3]+": cp.stderr="        + str(cp.stderr) )
             flog.debug( inspect.stack()[0][3]+": cp.returncode="    + str(cp.returncode ) )
 
-            #flog.setLevel( logging.INFO )
+            # Added by Aad.
+            saveDelete( changed_filename ) # remove tmp copy of file.
 
             if cp.returncode == 0:
                 flog.info(inspect.stack()[0][3]+": bestand  " + ftp_para['filename'] + " succesvol gekopierd via ftps als " + changed_filename )
             else:
                 raise Exception( cp.stderr.replace("\n","") )
 
-            saveDelete( changed_filename ) # remove tmp copy of file. 
         except Exception as e:
-            saveDelete( changed_filename )
             rt_status_db.strset('fout: server antwoord: '+str( e.args[0 ])+' Gestopt.',48,flog)
             flog.error(inspect.stack()[0][3]+": SFTP server antwoord: "+str(e.args[0])+" Gestopt.")
             sys.exit(11)
@@ -288,26 +300,28 @@ def Main(argv):
             flog.debug( inspect.stack()[0][3]+": cp.stderr="        + str(cp.stderr) )
             flog.debug( inspect.stack()[0][3]+": cp.returncode="    + str(cp.returncode ) )
 
+            #Added by Aad.
+            saveDelete( changed_filename ) # remove tmp copy of file.
+
             if cp.returncode == 0:
                 flog.info(inspect.stack()[0][3]+": bestand  " + ftp_para['filename'] + " succesvol gekopierd via ftps als " + changed_filename )
             else:
                 raise Exception( cp.stderr.replace("\n","") )
 
-            saveDelete( changed_filename )   
         except Exception as e:
-            saveDelete( changed_filename )
             rt_status_db.strset('fout: server antwoord: '+str( e.args[0 ])+' Gestopt.',48,flog)
             flog.error(inspect.stack()[0][3]+": SFTP server antwoord: "+str(e.args[0])+" Gestopt.")
             sys.exit(11)
 
-        
         #################################################################
         # STEP 2 checking if we have reached the maxium number of files #
         #################################################################
         try: # checkin if max files are reached
-            _head,tail = os.path.split( ftp_para['filename'] ) 
-            changed_filename    = '//p1mon/mnt/ramdisk/' + fileprefix + str(getUtcTime()) + '-' + tail
-            server              = "sftp://"+ftp_para['server'] + "/"
+
+            #_head,tail = os.path.split( ftp_para['filename'] ) 
+            #changed_filename    = '//p1mon/mnt/ramdisk/' + fileprefix + str(getUtcTime()) + '-' + tail
+
+            server = "sftp://"+ftp_para['server'] + "/"
             if len(ftp_para['directory']) > 0:
                 server  = server + ftp_para['directory'] + "/" # checked can handle // and / in path.
             else:
@@ -315,25 +329,31 @@ def Main(argv):
 
             flog.debug( inspect.stack()[0][3]+": server path is=" + str(server ) )
 
-            cp = subprocess.run([ "curl", "--globoff", "--insecure", "-sSv", server, "--user", ftp_para['user']+":"+ftp_para['password'] ], \
+            # Modified by Aad: for clarity, conform curl params: --list-only parameter added.
+            cp = subprocess.run([ "curl", "--globoff", "--insecure", "-sSv", server, "--user", ftp_para['user']+":"+ftp_para['password'], "--list-only" ], \
                  universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60 )
             
             flog.debug( inspect.stack()[0][3]+": cp.stdout="        + str(cp.stdout) )
             flog.debug( inspect.stack()[0][3]+": cp.stderr="        + str(cp.stderr) )
             flog.debug( inspect.stack()[0][3]+": cp.returncode="    + str(cp.returncode ) )
 
-            # pre-process output that could have a unspicified layout.
+            # pre-process output that could have a unspecified layout.
             filtered_file_list=[]
             matched_lines = [line for line in cp.stdout.split('\n') if fileprefix in line]
             for line in matched_lines:
-                filtered_file_list.append ( line[ line.find('P1BU-'): ] )
-           
+                #filtered_file_list.append ( line[ line.find('P1BU-'): ] )
+                #modified by Aad: absolute find filter replaced by variable.
+                filtered_file_list.append ( line[ line.find(fileprefix): ] )
+
             if cp.returncode == 0: # process output, proces files based on epoch value in filename
                 if len( filtered_file_list ) < int(ftp_para['maxfilecount'])-1: 
                     flog.info(inspect.stack()[0][3]+": maximale aantal van files "+str(ftp_para['maxfilecount'])+" niet gehaald ("+str(len(filtered_file_list))+")")
                 else:
                     flog.info(inspect.stack()[0][3]+": maximale aantal van files overschreden "+str(ftp_para['maxfilecount']))
-                    sftpRemoveOldFiles( filtered_file_list )
+                    # sftpRemoveOldFiles( filtered_file_list ) # orignal
+                    if sftpRemoveOldFiles( filtered_file_list ) == False:
+                        flog.info( inspect.stack()[0][3] + " Een of meerdere bestanden >" + str(ftp_para['maxfilecount']) + " zijn niet gewist.")
+
             else:
                 raise Exception( cp.stderr.replace("\n","") )
         except Exception as e:
@@ -346,9 +366,13 @@ def Main(argv):
         flog.info( "SFTP transfer is succesvol gestopt." )
         sys.exit(0) # all is well.
 
+################################
+# delete file, bug fail silent #
+################################
 def saveDelete( filename ):
     try:
         os.remove( filename )
+        flog.debug( inspect.stack()[0][3]+": bestand " + str(filename) + " verwijderd." )
     except Exception:
         pass
 
@@ -361,29 +385,41 @@ def sftpRemoveOldFiles( filtered_file_list ):
     else:
         path = "/home/"
 
-
     flog.debug( inspect.stack()[0][3]+": server path is=" + str(server ) )
    
     #print ( filtered_file_list )
     try:
+        # added by Aad for returning function result.
+        RM_error = False
         for item in filtered_file_list[ int(ftp_para['maxfilecount']):]:
             file_and_path = path + item
             flog.debug( inspect.stack()[0][3]+": file and path is=" + str( file_and_path ) )
             
-            cp = subprocess.run([ "curl", "--globoff", "--insecure", "-sSv", server, "--user", ftp_para['user']+":"+ftp_para['password'], "-Q", "RM "+file_and_path ], \
-                 universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60 )
+            #added by by Aad: -Q command quote aangepast
+            cp = subprocess.run([ "curl", "--globoff", "--insecure", "-sSv", server, "--user", ftp_para['user']+":"+ftp_para['password'], "-Q", '-rm \"/' + file_and_path + '\""' ] , \
+                universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60 )
             
             #flog.debug( inspect.stack()[0][3]+": cp.stdout="        + '\r\n' + str(cp.stdout) )
             #flog.debug( inspect.stack()[0][3]+": cp.stderr="        + '\r\n' + str(cp.stderr) )
             #flog.debug( inspect.stack()[0][3]+": cp.returncode="    + str( cp.returncode ) )
 
             if cp.returncode == 0: # process output, proces files based on epoch value in filename
-                 flog.info( inspect.stack()[0][3] + ": file " + file_and_path + " gewist.")
+                flog.info( inspect.stack()[0][3] + ": file " + file_and_path + " gewist.")
             else: 
-                raise Exception( cp.stderr.replace("\n","") )
+                flog.info( inspect.stack()[0][3] + ": file " + file_and_path + " niet gewist. cp.returncode = " + str(cp.returncode))
+                RM_error = True
+        # added by Aad: return false when one or more files > maxfilecount not deleted by -Q quote
+        if RM_error == True:
+            return False
     except Exception as e:
-            rt_status_db.strset( 'fout: directory list server : ' + str(e.args[0]) + ' Gestopt.', 48, flog )
-            flog.warning( inspect.stack()[0][3]+": bestand  " + file_and_path + " is niet verwijderd." )
+            #Modified by Aad: better errortext (copy paste failure ?)
+            rt_status_db.strset( ' fout: wissen server files > maxfilescount : ' + str(e.args[0]) + ' gestopt.', 48, flog )
+            flog.warning( inspect.stack()[0][3]+": waarschuwing probleem met het wissen van bestanden." )
+            #added by Aad: exit when system subproces failed
+            sys.exit(13)
+    # added by Aad: return true when all files > maxfilecount are deleted
+    return True
+
 
 def ftpsRemoveOldFiles( filtered_file_list ):     
     filtered_file_list.sort(reverse=True)
@@ -413,34 +449,35 @@ def ftpsRemoveOldFiles( filtered_file_list ):
             flog.warning( inspect.stack()[0][3]+": bestand  " + file_and_path + " is niet verwijderd." )
             
 def ftpCopy(ftpConnection, filename):
-	_head,tail = os.path.split(filename) 
-	try:
-		ftpConnection.storbinary('STOR '+tail, open(filename, 'rb'), blocksize=128)
-	except Exception as e:
-		rt_status_db.strset('fout: copy file naar server: '+str(e.args[0])+' Gestopt.',48,flog)
-		flog.error(inspect.stack()[0][3]+": copy file naar server: "+str(e.args[0])+" Gestopt.")
-		sys.exit(12)
-	
-	try:
-		file_list=ftpConnection.nlst()
-	except Exception as e:
-		rt_status_db.strset('fout: directory list server : '+str(e.args[0])+' Gestopt.',48,flog)
-		flog.error(inspect.stack()[0][3]+": directory list server fout: "+str(e.args[0])+" Gestopt.")
-		sys.exit(13)
-	
-	
-	flog.debug(inspect.stack()[0][3]+": file list van FTP server: "+str(file_list))
-	try:
-		ftpConnection.rename(tail, fileprefix + str(getUtcTime()) + '-' + tail )
-	except Exception as e:
-		rt_status_db.strset('fout: hernoemen van file ('+tail+') mislukt: '+str(e.args[0])+' Gestopt.',48,flog)
-		flog.error(inspect.stack()[0][3]+": hernoemen van file ("+tail+") mislukt: "+str(e.args[0])+" Gestopt.")
-		sys.exit(14)
-		
-	if int(ftp_para['maxfilecount']) > -1:
-		flog.debug(inspect.stack()[0][3]+": wissen van oude files staat aan. maximaal aantal files is "+str(ftp_para['maxfilecount']))
-		ftpRemoveOldFiles(ftpConnection, file_list)
-	
+    _head,tail = os.path.split(filename) 
+    try:
+        ftpConnection.storbinary('STOR '+tail, open(filename, 'rb'), blocksize=128)
+    except Exception as e:
+        rt_status_db.strset('fout: copy file naar server: '+str(e.args[0])+' Gestopt.',48,flog)
+        flog.error(inspect.stack()[0][3]+": copy file naar server: "+str(e.args[0])+" Gestopt.")
+        sys.exit(12)
+    
+    try:
+        file_list=ftpConnection.nlst()
+    except Exception as e:
+        rt_status_db.strset('fout: directory list server : '+str(e.args[0])+' Gestopt.',48,flog)
+        flog.error(inspect.stack()[0][3]+": directory list server fout: "+str(e.args[0])+" Gestopt.")
+        sys.exit(13)
+    
+    
+    flog.debug(inspect.stack()[0][3]+": file list van FTP server: "+str(file_list))
+    try:
+        ftpConnection.rename(tail, fileprefix + str(getUtcTime()) + '-' + tail )
+    except Exception as e:
+        rt_status_db.strset('fout: hernoemen van file ('+tail+') mislukt: '+str(e.args[0])+' Gestopt.',48,flog)
+        flog.error(inspect.stack()[0][3]+": hernoemen van file ("+tail+") mislukt: "+str(e.args[0])+" Gestopt.")
+        sys.exit(14)
+        
+    if int(ftp_para['maxfilecount']) > -1:
+        flog.debug(inspect.stack()[0][3]+": wissen van oude files staat aan. maximaal aantal files is "+str(ftp_para['maxfilecount']))
+        ftpRemoveOldFiles(ftpConnection, file_list)
+
+
 def ftpRemoveFile(ftpConnection, filename):
     #print("#"+filename)
     try:
@@ -468,39 +505,39 @@ def ftpRemoveOldFiles(ftpConnection, filelist):
     for item in filtered_file_list[ int(ftp_para['maxfilecount']):]:
         ftpRemoveFile(ftpConnection,item)
 
-def	ftpChangeDirectory(ftpConnection, directory):
-	try:
-		ftpConnection.cwd(directory)
-	except Exception as e:
-		rt_status_db.strset("fout: wijzigen van folder "+directory+" mislukt "+str(e.args[0])+" Gestopt.",48,flog)
-		flog.error(inspect.stack()[0][3]+": wijzigen van folder "+directory+" mislukt "+str(e.args[0])+" Gestopt.")
-		sys.exit(16)
+def    ftpChangeDirectory(ftpConnection, directory):
+    try:
+        ftpConnection.cwd(directory)
+    except Exception as e:
+        rt_status_db.strset("fout: wijzigen van folder "+directory+" mislukt "+str(e.args[0])+" Gestopt.",48,flog)
+        flog.error(inspect.stack()[0][3]+": wijzigen van folder "+directory+" mislukt "+str(e.args[0])+" Gestopt.")
+        sys.exit(16)
 
 def ftpConnect():
-	global ftp_para
-	flog.warning("Er wordt geen beveiligde verbinding gebruikt.")
-	ftpConnection = ftplib.FTP()
-	ftpConnection.connect( ftp_para['server'], int(ftp_para['port']))
-	ftpConnection.login(ftp_para['user'],ftp_para['password'])
-	flog.info(inspect.stack()[0][3]+": server: "+ftpConnection.getwelcome())
-	return ftpConnection		
+    global ftp_para
+    flog.warning("Er wordt geen beveiligde verbinding gebruikt.")
+    ftpConnection = ftplib.FTP()
+    ftpConnection.connect( ftp_para['server'], int(ftp_para['port']))
+    ftpConnection.login(ftp_para['user'],ftp_para['password'])
+    flog.info(inspect.stack()[0][3]+": server: "+ftpConnection.getwelcome())
+    return ftpConnection        
 
 
 def grep(pattern,word_list):
     expr = re.compile(pattern)
-    return [elem for elem in word_list if expr.match(elem)]		
-	 
+    return [elem for elem in word_list if expr.match(elem)]        
+     
 #-------------------------------
 if __name__ == "__main__":
-	try:
-		logfile = const.DIR_FILELOG+prgname+".log" 
-		setFile2user(logfile,'p1mon')
-		flog = fileLogger(logfile,prgname)    
-		#### aanpassen bij productie
-		flog.setLevel( logging.INFO )
-		flog.consoleOutputOn(True)
-	except Exception as e:
-		print ( "critical geen logging mogelijke, gestopt.:"+str(e.args[0]) )
-		sys.exit(10) #  error: no logging check file rights
+    try:
+        logfile = const.DIR_FILELOG+prgname+".log" 
+        setFile2user(logfile,'p1mon')
+        flog = fileLogger(logfile,prgname)    
+        #### aanpassen bij productie
+        flog.setLevel( logging.INFO )
+        flog.consoleOutputOn(True)
+    except Exception as e:
+        print ( "critical geen logging mogelijke, gestopt.:"+str(e.args[0]) )
+        sys.exit(10) #  error: no logging check file rights
 
-	Main(sys.argv[1:])       
+    Main(sys.argv[1:])

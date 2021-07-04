@@ -128,11 +128,37 @@ class powerProductionDB():
             self.close_db()
         return False
 
+    # volgorde van tuples mag niet worden gewijzigd, wordt gebruikt in MQTT proces.
+    def select_one_record(self , order='desc' ):
+        try:
+            sqlstr = "select \
+                TIMESTAMP, \
+                cast(strftime('%s', TIMESTAMP, 'utc' ) AS Integer), \
+                PRODUCTION_KWH_HIGH,\
+                PRODUCTION_KWH_LOW,\
+                PULS_PER_TIMEUNIT_HIGH,\
+                PULS_PER_TIMEUNIT_LOW,\
+                PRODUCTION_KWH_HIGH_TOTAL,\
+                PRODUCTION_KWH_LOW_TOTAL, \
+                PRODUCTION_KWH_TOTAL, \
+                PRODUCTION_PSEUDO_KW \
+                from " + self.table + \
+                " where TIMEPERIOD_ID = 11 order by timestamp " + str(order) + " limit 1;"
+            sqlstr = " ".join( sqlstr.split() )
+            set = self.select_rec( sqlstr )
+            if len(set) > 0:
+                #return  "test", 1, 2, 3, 4, 5, 6, 7, 8, 9
+                return set[0][0], set[0][1], set[0][2], set[0][3], set[0][4], set[0][5], set[0][6], set[0][7], set[0][8], set[0][9]
+
+            return None
+        except Exception as _e:
+            print ( _e )
+            return None
+
     # return number of records in database
     def record_count( self ):
         sql = "select count() from " + self.table
         return int( self.select_rec( sql )[0][0] )
-
 
     def select_rec( self, sqlstr ):
         self.con = lite.connect(self.dbname)
@@ -151,6 +177,11 @@ class powerProductionDB():
         self.con.execute("VACUUM;")
         self.close_db()
 
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
     def excute(self,sqlstr):
         self.con = lite.connect(self.dbname)
         self.cur = self.con.cursor()
@@ -158,6 +189,12 @@ class powerProductionDB():
         self.con.commit()
         self.close_db()
 
+    def insert_rec(self,sqlstr):
+        self.con = lite.connect(self.dbname)
+        self.cur = self.con.cursor()
+        self.cur.execute(sqlstr)
+        self.con.commit()
+        self.close_db()
 
 WATERMETER_REC = {
     'TIMESTAMP'                 :'', 
@@ -318,6 +355,11 @@ class WatermeterDBV2():
         self.con.execute("VACUUM;")
         self.close_db()
 
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
     def excute(self,sqlstr):
         self.con = lite.connect(self.dbname)
         self.cur = self.con.cursor()
@@ -334,7 +376,7 @@ class PhaseDB():
         self.table = table
         # VEBRK = energie waar je voor betaald aan de leverancier (nuon enz) :(
         # GELVR = energie die je TERUG levert aan de leverancier :)
-        # VEBRK KW  L1 CODE 21
+        # VEBRK KW L1 CODE 21
         # VEBRK KW L2 CODE 41
         # VEBRK KW L3 CODE 61
         # GELVR KW L1 CODE 22
@@ -405,6 +447,11 @@ class PhaseDB():
     def defrag(self):
         self.con = lite.connect(self.dbname)
         self.con.execute("VACUUM;")
+        self.close_db()
+
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
         self.close_db()
 
     def del_rec(self,sqlstr):
@@ -821,6 +868,11 @@ class WatermeterDB():
         self.con.execute("VACUUM;")
         self.close_db()
 
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
 class temperatureDB():
 
     def init(self, dbname, table):
@@ -1079,6 +1131,11 @@ class temperatureDB():
         self.con.execute("VACUUM;")
         self.close_db()
 
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
     def replace(self, timestamp,rec_id,t1,t1avg,t1min,t1max,t2,t2avg,t2min,t2max,flog):
         #print ("replace")
         sqlstr = "replace into " + self.table + " (TIMESTAMP, RECORD_ID, TEMPERATURE_1, TEMPERATURE_1_AVG, TEMPERATURE_1_MIN, TEMPERATURE_1_MAX,\
@@ -1264,6 +1321,12 @@ WIND_DEGREE_MIN,WIND_DEGREE_AVG,WIND_DEGREE_MAX\
         self.con.execute("VACUUM;")
         self.close_db()
 
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
+
 class currentWeatherDB():
 
     def init(self,dbname, table):
@@ -1384,6 +1447,12 @@ WEATHER_ICON,PRESSURE,HUMIDITY,WIND_SPEED,WIND_DEGREE,CLOUDS,WEATHER_ID) values 
         self.con = lite.connect(self.dbname)
         self.con.execute("VACUUM;")
         self.close_db()
+
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
 
 class configDB():
 
@@ -1577,6 +1646,7 @@ class configDB():
         self.insert_rec("insert or ignore into "+table+" values ( '126','26'                   ,'ingestelde GPIO pin, voor het inlezen van KWh meter productie(S0) puls.')" )
         self.insert_rec("insert or ignore into "+table+" values ( '127','0.0005'               ,'aantal kWh per KWh meter productie(S0) puls.')" )
 
+        # opgelet deze regel is bewust een replace geen insert!
         self.insert_rec("replace into "+table+\
             " values ( '128','" + const.P1_PATCH_LEVEL + "'                                     ,'Software patch:')" )
 
@@ -1588,6 +1658,13 @@ class configDB():
 
         # opgelet deze regel is bewust een replace geen insert!
         self.insert_rec("replace into " + table + " values ('133','" + const.P1_SERIAL_VERSION + "'               ,'Versie nummer:')" ) 
+
+        self.insert_rec("insert or ignore into " + table + " values ( '134','0','Verberg de P1 header in de UI:')")
+        self.insert_rec("insert or ignore into " + table + " values ( '135','0'                ,'MQTT programma aan/uit (1/0).')")
+        self.insert_rec("insert or ignore into " + table + " values ( '136','0'                ,'MQTT powerproduction publish aan/uit (1/0).')")
+
+        self.insert_rec("insert or ignore into " + table + " values ( '137','0'                ,'P1Sqlimport programma aan/uit (0 is uit >0 is status id en uitvoeren).')")
+        self.insert_rec("insert or ignore into " + table + " values ( '138',''                 ,'P1Sqlimport import bestand.')")
 
         self.close_db()
 
@@ -1631,6 +1708,13 @@ class configDB():
         self.con.commit()
         self.close_db()
 
+    def execute_rec(self,sqlstr):
+        self.con = lite.connect(self.dbname)
+        self.cur = self.con.cursor()
+        self.cur.execute(sqlstr)
+        self.con.commit()
+        self.close_db()
+
     def update_rec(self,sqlstr):
         self.con = lite.connect(self.dbname)
         self.cur = self.con.cursor()
@@ -1654,7 +1738,17 @@ class configDB():
         	#flog.debug(inspect.stack()[1][3]+": config db select per id: sql="+sql_select)
         	return set[0][0],set[0][1], set[0][2]
         except Exception as e:
-        	flog.error(inspect.stack()[1][3]+" db config select gefaald voor id="+str(idn)+". Melding="+str(e.args[0]))        
+        	flog.error(inspect.stack()[1][3]+" db config select gefaald voor id="+str(idn)+". Melding="+str(e.args[0]))
+
+    def defrag(self):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("VACUUM;")
+        self.close_db()
+
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
     
 class rtStatusDb():
 
@@ -1985,9 +2079,8 @@ class rtStatusDb():
 
         self.insert_rec("insert or ignore into " + table + " values ( '108','onbekend','Tijdstip start KWh meter productie(S0):',0)")
         self.insert_rec("insert or ignore into " + table + " values ( '109','onbekend','Tijdstip laatste verwerkte KWh meter productie(S0) puls:',0)")
-        # 110 was niet nodig en kan worden hergebruikt.
-        #self.insert_rec("insert or ignore into " + table + " values ( '110','onbekend','Status van kWh productie (S0) meterstand:',0)")
-
+       
+        self.insert_rec("insert or ignore into " + table + " values ( '110','','Laatste P1 monitor versie nummer:',0)")
 
          # fix typo's from version 0.9.15a and up
         sql_update = "update status set label ='Tijdstip laatste verwerkte minuten gegevens:' where id=7"
@@ -2031,7 +2124,7 @@ class rtStatusDb():
 
     def timestamp(self, idn, flog):
         sql_update = "update status set status='"\
-        +mkLocalTimeString()+"' where id="+str(idn)
+        + mkLocalTimeString() + "' where id="+str(idn)
         try:
             self.update_rec(sql_update)
             flog.debug(inspect.stack()[1][3]+": status db update: sql="+sql_update)
@@ -2054,6 +2147,16 @@ class rtStatusDb():
             return set[0][0],set[0][1], set[0][2], set[0][3]
         except Exception as e:
             flog.error(inspect.stack()[1][3]+" db status strget gefaald voor id="+str(idn)+". Melding="+str(e.args[0]))	
+
+    def defrag(self):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("VACUUM;")
+        self.close_db()
+
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
 
 class SqlDb1():
     
@@ -2147,6 +2250,11 @@ class SqlDb1():
         self.con.execute("VACUUM;")
         self.close_db()
 
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
     def count(self):
         self.con = lite.connect(self.dbname)
         self.cur = self.con.cursor()
@@ -2159,7 +2267,7 @@ class SqlDb2():
     
     def init(self,dbname, table):
         self.dbname = dbname
-        self.con = lite.connect(dbname)
+        self.con = lite.connect(dbname ) 
         self.cur = self.con.cursor()
         self.table = table
         # VEBRK = energie waar je voor betaald aan de leverancier (nuon enz) :(
@@ -2181,6 +2289,13 @@ class SqlDb2():
             VERBR_GAS_2421 REAL DEFAULT 0\
         );")
         # clean up van het database bestand , file kleiner maken
+        self.close_db()
+
+
+    def executscript( self, script ): #TODO verder uitzoeken/testen.
+        self.con = lite.connect(self.dbname)
+        self.cur = self.con.cursor()
+        self.cur.executescript( script )
         self.close_db()
 
     def sql2file(self, filename):
@@ -2223,10 +2338,10 @@ ACT_GELVR_KW_270,VERBR_GAS_2421) values ('" + \
         if self.con:
             self.con.close()
 
-    def insert_rec(self,sqlstr):
+    def insert_rec( self,sqlstr ):
         self.con = lite.connect(self.dbname)
         self.cur = self.con.cursor()
-        self.cur.execute(sqlstr)
+        self.cur.execute( sqlstr )
         self.con.commit()
         self.close_db()
 
@@ -2256,6 +2371,12 @@ ACT_GELVR_KW_270,VERBR_GAS_2421) values ('" + \
         self.con = lite.connect(self.dbname)
         self.con.execute("VACUUM;")
         self.close_db()
+
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
 
 class SqlDb3():
 
@@ -2354,6 +2475,11 @@ GELVR_KWH_281,GELVR_KWH_282,VERBR_KWH_X,GELVR_KWH_X,TARIEFCODE,VERBR_GAS_2421,VE
         self.con.execute("VACUUM;")
         self.close_db()
 
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
 class SqlDb4():
 
     def init(self,dbname, table):
@@ -2448,6 +2574,11 @@ GELVR_KWH_281,GELVR_KWH_282,VERBR_KWH_X,GELVR_KWH_X,VERBR_GAS_2421,VERBR_GAS_X) 
     def defrag(self):
         self.con = lite.connect(self.dbname)
         self.con.execute("VACUUM;")
+        self.close_db()
+
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
         self.close_db()
 
 class financieelDb():
@@ -2551,4 +2682,10 @@ class financieelDb():
         self.con = lite.connect(self.dbname)
         self.con.execute("VACUUM;")
         self.close_db()
+
+    def integrity_check( self ):
+        self.con = lite.connect(self.dbname)
+        self.con.execute("PRAGMA quick_check;")
+        self.close_db()
+
 

@@ -78,9 +78,9 @@ function readJsonApiHistoryDay(){
 function readJsonApiSmartMeter(){ 
     $.getScript( "./api/v1/smartmeter?limit=60", function( data, textStatus, jqxhr ) {
       try {
-	
+    
         var jsondata = JSON.parse(data); 
-		
+        
         var item;
         verbrData10sec.length = 0;
         gelvrData10sec.length = 0;
@@ -91,13 +91,13 @@ function readJsonApiSmartMeter(){
             gelvrData10sec.push([item[0],item[9]/1000]); // Watt produced 
         }  
         
-		$('#verbruikDal').text ( padXX( jsondata[0][3]  ,5 ,3 )+" kWh")
-		$('#verbruikPiek').text( padXX( jsondata[0][4]  ,5 ,3)+" kWh");
-		$('#verbruikDGas').text( padXX( jsondata[0][10] ,5 ,3));
-		$('#geleverdDal').text(  padXX( jsondata[0][5]  ,5 ,3 )+" kWh");
-		$('#geleverdPiek').text( padXX( jsondata[0][6]  ,5 ,3)+" kWh");
+        $('#verbruikDal').text ( padXX( jsondata[0][3]  ,5 ,3 )+" kWh")
+        $('#verbruikPiek').text( padXX( jsondata[0][4]  ,5 ,3)+" kWh");
+        $('#verbruikDGas').text( padXX( jsondata[0][10] ,5 ,3));
+        $('#geleverdDal').text(  padXX( jsondata[0][5]  ,5 ,3 )+" kWh");
+        $('#geleverdPiek').text( padXX( jsondata[0][6]  ,5 ,3)+" kWh");
         
-		if ( jsondata[0][7] == 'P' ) {
+        if ( jsondata[0][7] == 'P' ) {
             $("#verbruikPiekI").css("color","#F2BA0F");
             $("#geleverdPiekI").css("color","#98D023");
             $("#verbruikDalI" ).css("color","#6E797C");
@@ -145,86 +145,86 @@ function readJsonApiStatus(){
     
     $.getScript( "./api/v1/status", function( data, textStatus, jqxhr ) {
       try {
-		//var verbruikTotaal =  0;
-		//var geleverdTotaal =  0;
+        //var verbruikTotaal =  0;
+        //var geleverdTotaal =  0;
         var jsondata = JSON.parse(data); 
-		
+        
         for (var j=0;  j < jsondata.length; j++){  
-			// console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
+            // console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
             if ( jsondata[j][0] == 1 ) {
-				$('#maxkWPiekVerbruikWaarde').text( padXX( jsondata[j][1], 2, 2 ) + " kW" );
-				continue;
-			}
-			if ( jsondata[j][0] == 2 ) {
-				$('#maxkWPiekVerbruikDatum').text( jsondata[j][1] );
-				continue;
-			}
-			if ( jsondata[j][0] == 3 ) {
-				$('#maxkWPiekGeleverdWaarde').text( padXX( jsondata[j][1], 2, 2 ) + " kW" );
-				continue;
-			}
-			if ( jsondata[j][0] == 4 ) {
-				$('#maxkWPiekGeleverdDatum').text( jsondata[j][1] );
-				continue;
-			}
-			
-			if ( jsondata[j][0] == 8 ) { 
-				$('#verbruikDalKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
-				//verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
-				continue;
-			}
-			if ( jsondata[j][0] == 9 ) { 
-				$('#verbruikPiekKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
-				//verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
-				continue;
-			}
+                $('#maxkWPiekVerbruikWaarde').text( padXX( jsondata[j][1], 2, 2 ) + " kW" );
+                continue;
+            }
+            if ( jsondata[j][0] == 2 ) {
+                $('#maxkWPiekVerbruikDatum').text( jsondata[j][1] );
+                continue;
+            }
+            if ( jsondata[j][0] == 3 ) {
+                $('#maxkWPiekGeleverdWaarde').text( padXX( jsondata[j][1], 2, 2 ) + " kW" );
+                continue;
+            }
+            if ( jsondata[j][0] == 4 ) {
+                $('#maxkWPiekGeleverdDatum').text( jsondata[j][1] );
+                continue;
+            }
+            
+            if ( jsondata[j][0] == 8 ) { 
+                $('#verbruikDalKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
+                //verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
+                continue;
+            }
+            if ( jsondata[j][0] == 9 ) { 
+                $('#verbruikPiekKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
+                //verbruikTotaal = verbruikTotaal + parseFloat( jsondata[j][1] );
+                continue;
+            }
             if ( jsondata[j][0] == 10 ) { 
-				$('#geleverdDalKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
-				//geleverdTotaal = geleverdTotaal + parseFloat( jsondata[j][1] );
-				continue;
-			}
-			if ( jsondata[j][0] == 11 ) { 
-				$('#geleverdPiekKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
-				//geleverdTotaal = geleverdTotaal +  parseFloat( jsondata[j][1] );
-				continue;
-			}
+                $('#geleverdDalKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
+                //geleverdTotaal = geleverdTotaal + parseFloat( jsondata[j][1] );
+                continue;
+            }
+            if ( jsondata[j][0] == 11 ) { 
+                $('#geleverdPiekKW').text( padXX( jsondata[j][1], 5, 3 ) + " kWh" );
+                //geleverdTotaal = geleverdTotaal +  parseFloat( jsondata[j][1] );
+                continue;
+            }
             /*
-			if ( jsondata[j][0] == 44 ) { 
-				$('#verbruikGasDag').text( padXX( jsondata[j][1] ,5, 3) );
-				continue;
-			}
+            if ( jsondata[j][0] == 44 ) { 
+                $('#verbruikGasDag').text( padXX( jsondata[j][1] ,5, 3) );
+                continue;
+            }
             */
             if ( jsondata[j][0] == 74 ) { 
                 consumptionPowerPhase[0] = parseFloat( jsondata[j][1] )
-				continue;
-			}
+                continue;
+            }
             if ( jsondata[j][0] == 75 ) { 
                 consumptionPowerPhase[1] = parseFloat( jsondata[j][1] )
-				continue;
-			}
+                continue;
+            }
             if ( jsondata[j][0] == 76 ) { 
                 consumptionPowerPhase[2] = parseFloat( jsondata[j][1] )
-				continue;
-			}
-			if ( jsondata[j][0] == 77) { 
+                continue;
+            }
+            if ( jsondata[j][0] == 77) { 
                 productionPowerPhase[0] = parseFloat( jsondata[j][1] )
-				continue;
-			}
+                continue;
+            }
             if ( jsondata[j][0] == 78 ) { 
                 productionPowerPhase[1] = parseFloat( jsondata[j][1] )
-				continue;
-			}
+                continue;
+            }
             if ( jsondata[j][0] == 79 ) { 
                 productionPowerPhase[2] = parseFloat( jsondata[j][1] )
-				continue;
-			}
-		 }
+                continue;
+            }
+         }
 
          //productionPowerPhase[0]  = productionPowerPhase[1]  = productionPowerPhase[2] = 1
          //consumptionPowerPhase[0] = consumptionPowerPhase[1] = consumptionPowerPhase[2] = 0
 
-		 // sum the High and Low values
-		 //$('#verbruikDalEnPiekKW').text( padXX( verbruikTotaal ,5, 3 ) +" kWh");
+         // sum the High and Low values
+         //$('#verbruikDalEnPiekKW').text( padXX( verbruikTotaal ,5, 3 ) +" kWh");
          //$('#geleverdDalEnPiekKW').text( padXX( geleverdTotaal ,5, 3 ) +" kWh");
 
         //console.log( "consumptionPowerPhase="+consumptionPowerPhase )
@@ -411,54 +411,54 @@ function createChartVerbruik(){
             plotShadow: false
         },
         exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null },
-    	tooltip: { enabled: false },
-    	pane: {
-	        startAngle: -150,
-	        endAngle: 150,
-	        background: [{
-	            backgroundColor: '#F5F5F5',
-	            borderWidth: 2,
-	            outerRadius: '109%'
-	        }]
-	    },      
-    	yAxis: {
-        	min: 0,
-			max: wattageMaxValueConsumption, // dynamic
-			labels: {
-            	distance: -27
-        	},
-        	minorTickInterval: 'auto',
-        	minorTickWidth: 11,
-        	minorTickLength: 18,
-        	minorTickPosition: 'inside',
-        	minorTickColor: '#F2BA0F',
+        credits: { enabled: false },
+        title: { text: null },
+        tooltip: { enabled: false },
+        pane: {
+            startAngle: -150,
+            endAngle: 150,
+            background: [{
+                backgroundColor: '#F5F5F5',
+                borderWidth: 2,
+                outerRadius: '109%'
+            }]
+        },      
+        yAxis: {
+            min: 0,
+            max: wattageMaxValueConsumption, // dynamic
+            labels: {
+                distance: -27
+            },
+            minorTickInterval: 'auto',
+            minorTickWidth: 11,
+            minorTickLength: 18,
+            minorTickPosition: 'inside',
+            minorTickColor: '#F2BA0F',
             
-        	tickPixelInterval: 50,
-        	tickWidth: 11,
-        	tickPosition: 'inside',
-        	tickLength: 18,
-        	tickColor: '#F2BA0F',
+            tickPixelInterval: 50,
+            tickWidth: 11,
+            tickPosition: 'inside',
+            tickLength: 18,
+            tickColor: '#F2BA0F',
             title: {
                 useHTML: true,
                 text: 'kW',
                 x: 0,
                 y: 160,
             },
-    	},
-    	plotOptions: {
-    		gauge: {
-				dial: {
-    				radius: '70%',
-					backgroundColor: '#384042',
-					borderWidth: 1,
-					baseWidth: 15,
-					topWidth: 1,
-					baseLength: '1%', // of radius
-					rearLength: '1%'
-				},
-				pivot: {
+        },
+        plotOptions: {
+            gauge: {
+                dial: {
+                    radius: '70%',
+                    backgroundColor: '#384042',
+                    borderWidth: 1,
+                    baseWidth: 15,
+                    topWidth: 1,
+                    baseLength: '1%', // of radius
+                    rearLength: '1%'
+                },
+                pivot: {
                     radius: 8,
                     borderWidth: 1,
                     backgroundColor: '#384042',
@@ -478,86 +478,86 @@ function createChartVerbruik(){
                     }
                 },
                 wrap: false  
-			}
+            }
         },
-    	series: [{
-    		marker: {
-            	fillColor: '#384042',
-            	lineColor: '#384042'
-        	},	
-        	animation: {
+        series: [{
+            marker: {
+                fillColor: '#384042',
+                lineColor: '#384042'
+            },    
+            animation: {
                 duration: 1000  
             },
-        	data: [{
-        		color: '#384042',
-        		y: gaugeDataVerbruik
-        	}]
-    	}]
-	});
+            data: [{
+                color: '#384042',
+                y: gaugeDataVerbruik
+            }]
+        }]
+    });
 }
 
 function createChartGeleverd(){
-	$('#actVermogenMeterGeleverd').highcharts({
-    	chart: {
-		style: {
-			fontFamily: 'robotomedium'
-			},
-        	type: 'gauge',
-        	plotBackgroundColor: null,
-        	plotBackgroundImage: null,
-        	plotBorderWidth: 0,
-        	plotShadow: false
-    	},
-    	exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null },
-    	tooltip: { enabled: false },
-    	pane: {
-	        startAngle: -150,
-	        endAngle: 150,        
-	        background: [{
-	            backgroundColor: '#F5F5F5',
-	            borderWidth: 2,
-	            outerRadius: '109%'
-	        }]
-	    },      
-    	yAxis: {
-        	min: 0,
-        	max: wattageMaxValueProduction, // dynamic
-			labels: {
-            	distance: -27
-        	},
+    $('#actVermogenMeterGeleverd').highcharts({
+        chart: {
+        style: {
+            fontFamily: 'robotomedium'
+            },
+            type: 'gauge',
+            plotBackgroundColor: null,
+            plotBackgroundImage: null,
+            plotBorderWidth: 0,
+            plotShadow: false
+        },
+        exporting: { enabled: false },
+        credits: { enabled: false },
+        title: { text: null },
+        tooltip: { enabled: false },
+        pane: {
+            startAngle: -150,
+            endAngle: 150,        
+            background: [{
+                backgroundColor: '#F5F5F5',
+                borderWidth: 2,
+                outerRadius: '109%'
+            }]
+        },      
+        yAxis: {
+            min: 0,
+            max: wattageMaxValueProduction, // dynamic
+            labels: {
+                distance: -27
+            },
       
-        	minorTickInterval: 'auto',
-        	minorTickWidth: 11,
-        	minorTickLength: 18,
-        	minorTickPosition: 'inside',
-        	minorTickColor: '#98D023',
+            minorTickInterval: 'auto',
+            minorTickWidth: 11,
+            minorTickLength: 18,
+            minorTickPosition: 'inside',
+            minorTickColor: '#98D023',
 
-        	tickPixelInterval: 50,
-        	tickWidth: 11,
-        	tickPosition: 'inside',
-        	tickLength: 18,
-        	tickColor: '#98D023',
+            tickPixelInterval: 50,
+            tickWidth: 11,
+            tickPosition: 'inside',
+            tickLength: 18,
+            tickColor: '#98D023',
             title: {
                 useHTML: true,
                 text: 'kW',
                 x: 0,
                 y: 160,
-            },	
-    	},
-    	plotOptions: {
-    		gauge: {
-				dial: {
-    				radius: '70%',
-					backgroundColor: '#384042',		
-					borderWidth: 1,
-					baseWidth: 15,
-					topWidth: 1,
-					baseLength: '1%', // of radius
-					rearLength: '1%'
-				},
-				pivot: {
+            },    
+        },
+        plotOptions: {
+            gauge: {
+                dial: {
+                    radius: '70%',
+                    backgroundColor: '#384042',        
+                    borderWidth: 1,
+                    baseWidth: 15,
+                    topWidth: 1,
+                    baseLength: '1%', // of radius
+                    rearLength: '1%'
+                },
+                pivot: {
                     radius: 8,
                     borderWidth: 1,
                     backgroundColor: '#384042',
@@ -577,141 +577,141 @@ function createChartGeleverd(){
                     }
                 },
                 wrap: false  
-			}
+            }
         },
-    	series: [{
-    		marker: {
-            	fillColor: '#384042',
-            	lineColor: '#384042'
-        	},	
-        	animation: {
+        series: [{
+            marker: {
+                fillColor: '#384042',
+                lineColor: '#384042'
+            },    
+            animation: {
                 duration: 1000  
             },
-        	data: [{
-        		color: '#384042',
-        		y: gaugeDataGeleverd
-        	}]
-    	}]
-	});
+            data: [{
+                color: '#384042',
+                y: gaugeDataGeleverd
+            }]
+        }]
+    });
 }
 
-function createChartVerbruikGrafiek() {	
-	$('#actVermogenMeterGrafiekVerbruik').highcharts({
-    	chart: {
-        	type: 'areaspline' 	
-    	},
-    	legend: {
+function createChartVerbruikGrafiek() {    
+    $('#actVermogenMeterGrafiekVerbruik').highcharts({
+        chart: {
+            type: 'areaspline'     
+        },
+        legend: {
             enabled: false
         },
-    	exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null }, 	
-    	tooltip: {
-        	useHTML: true,
-        	style: {
-     			padding: 3,
-     			color: '#6E797C'
- 			},
-        	formatter: function() {
-				var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
-				s += '<br/><span style="color: #F2BA0F;">Vermogen kW: </span>'+this.y.toFixed(3);
-				return s;
-			},		      	
-	    	backgroundColor: '#F5F5F5',
-	    	borderColor: '#DCE1E3',
-	    	crosshairs: [true, true],
-	    	borderWidth: 1
-	    },  
-	    xAxis: {   		
-	        type: 'datetime',
-	        lineColor: '#6E797C',
-		    lineWidth: 1     
-	    },
-    	yAxis: {
-	    	gridLineColor: '#6E797C',
-	    	gridLineDashStyle: 'longdash',
-        	floor: 0,
-        	title: { 
+        exporting: { enabled: false },
+        credits: { enabled: false },
+        title: { text: null },     
+        tooltip: {
+            useHTML: true,
+            style: {
+                 padding: 3,
+                 color: '#6E797C'
+             },
+            formatter: function() {
+                var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
+                s += '<br/><span style="color: #F2BA0F;">Vermogen kW: </span>'+this.y.toFixed(3);
+                return s;
+            },                  
+            backgroundColor: '#F5F5F5',
+            borderColor: '#DCE1E3',
+            crosshairs: [true, true],
+            borderWidth: 1
+        },  
+        xAxis: {           
+            type: 'datetime',
+            lineColor: '#6E797C',
+            lineWidth: 1     
+        },
+        yAxis: {
+            gridLineColor: '#6E797C',
+            gridLineDashStyle: 'longdash',
+            floor: 0,
+            title: { 
                 text: null
             }
-    	},
-    	plotOptions: {
+        },
+        plotOptions: {
             series: {
-    		color: '#F2BA0F',
-    			states: {
-            		hover: {
-                		enabled: false
-            		}
-        		},
-            	marker: {
-            		enabled: false
-             	}
+            color: '#F2BA0F',
+                states: {
+                    hover: {
+                        enabled: false
+                    }
+                },
+                marker: {
+                    enabled: false
+                 }
             }
         },
-    	series: [{	
+        series: [{    
             data: verbrData10sec
-    	}]
-	});
+        }]
+    });
 }
 
-function createChartGeleverdGrafiek() {	
-	$('#actVermogenMeterGrafiekGeleverd').highcharts({
-    	chart: {
-        	type: 'areaspline' 	
-    	},
-    	legend: {
+function createChartGeleverdGrafiek() {    
+    $('#actVermogenMeterGrafiekGeleverd').highcharts({
+        chart: {
+            type: 'areaspline'     
+        },
+        legend: {
             enabled: false
         },
-    	exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null },
-    	tooltip: {
-        	useHTML: true,
-        	style: {
-     			padding: 3,
-     			color: '#6E797C'
- 			},
-        	formatter: function() {
-				var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
-				s += '<br/><span style="color: #98D023;">vermogen kW: </span>'+this.y.toFixed(3);
-				return s;
-			},
-				      	
-	    	backgroundColor: '#F5F5F5',
-	    	borderColor: '#DCE1E3',
-	    	crosshairs: [true, true],
-	    	borderWidth: 1
-	    },       
-	    xAxis: {   		
-	        type: 'datetime',
-	        lineColor: '#6E797C',
-		    lineWidth: 1       
-	    },
-    	yAxis: {
-	    	gridLineColor: '#6E797C',
-	    	gridLineDashStyle: 'longdash',
-	    	floor: 0,
-        	title: { 
+        exporting: { enabled: false },
+        credits: { enabled: false },
+        title: { text: null },
+        tooltip: {
+            useHTML: true,
+            style: {
+                 padding: 3,
+                 color: '#6E797C'
+             },
+            formatter: function() {
+                var s = '<b>'+ Highcharts.dateFormat('%A %H:%M:%S', this.x) +'</b>';
+                s += '<br/><span style="color: #98D023;">vermogen kW: </span>'+this.y.toFixed(3);
+                return s;
+            },
+                          
+            backgroundColor: '#F5F5F5',
+            borderColor: '#DCE1E3',
+            crosshairs: [true, true],
+            borderWidth: 1
+        },       
+        xAxis: {           
+            type: 'datetime',
+            lineColor: '#6E797C',
+            lineWidth: 1       
+        },
+        yAxis: {
+            gridLineColor: '#6E797C',
+            gridLineDashStyle: 'longdash',
+            floor: 0,
+            title: { 
                 text: null
             }
-    	},
-    	plotOptions: {
+        },
+        plotOptions: {
             series: {
-    		color: '#98D023',
-    			states: {
-            		hover: {
-                		enabled: false
-            		}
-        		},
-            	marker: {
-            		enabled: false
-             	}
+            color: '#98D023',
+                states: {
+                    hover: {
+                        enabled: false
+                    }
+                },
+                marker: {
+                    enabled: false
+                 }
             }
         },
-    	series: [{	
+        series: [{    
             data: gelvrData10sec
-    	}]
-	});
+        }]
+    });
 }
 
 function DataLoop10Sec() {
@@ -740,12 +740,12 @@ function setDynamicTitles() {
       try {
         var jsondata = JSON.parse(data); 
         for (var j=0;  j < jsondata.length; j++){  
-			// console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
+            // console.log( jsondata[j][0] + ' - ' + jsondata[j][1] )
             if ( jsondata[j][0] == 78) {
                 if ( jsondata[j][1] == "0" ) { e_mode = 0 }
                 if ( jsondata[j][1] == "1" ) { e_mode = 1 }
-				break;
-			}
+                break;
+            }
         }
 
       } catch(err) {
@@ -803,19 +803,15 @@ $(function () {
 </head>
 <body>
 
-<div class="top-wrapper">
-    <div class="content-wrapper"> 
-        <?php page_header();?>     
-    </div>
-</div>
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">
-		<!-- header 2 -->
-		<?php pageclock(); ?>
-		<?php page_menu_header_main(0); ?>
-	    <?php weather_info(); ?>
-	</div>
+        <!-- header 2 -->
+        <?php pageclock(); ?>
+        <?php page_menu_header_main(0); ?>
+        <?php weather_info(); ?>
+    </div>
 </div>
 <div class="mid-section">
     <div class="left-wrapper">
@@ -826,73 +822,73 @@ $(function () {
     
     <div class="mid-content">
     <!-- links -->
-    	<div class="frame-2-top">
-    		<span class="text-2">verbruik</span>
-    	</div>
-    	<div class="frame-2b-bot"> 
+        <div class="frame-2-top">
+            <span class="text-2">verbruik</span>
+        </div>
+        <div class="frame-2b-bot"> 
             <div class="pos-2"  id="actVermogenMeterVerbruik"></div>
             <div class="pos-46" id="actVermogenFaseVerbruik"></div>
-    		<div class="pos-47 pad-2">
-    			<div class="frame-3-top">
-    			<span id="verbruikPiekHeader" class="text-3">meterstand</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<div id="meterstand_piek_verbruik_totaal" title="fout niet gezet.">
-					<span class="fa-layers fa-fw text-4">
-    					<i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					<i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
-  					</span>
-					<span id="verbruikPiek" class="text-4"></span><br>
+            <div class="pos-47 pad-2">
+                <div class="frame-3-top">
+                <span id="verbruikPiekHeader" class="text-3">meterstand</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <div id="meterstand_piek_verbruik_totaal" title="fout niet gezet.">
+                    <span class="fa-layers fa-fw text-4">
+                        <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                        <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
+                      </span>
+                    <span id="verbruikPiek" class="text-4"></span><br>
                     </div>
 
 
-    				<div id="meterstand_dal_verbruik_totaal" title="fout niet gezet.">
-					<span class="fa-layers fa-fw text-4">
-    					<i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					<i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
-  					</span>
-					<span id="verbruikDal" class="text-4 "></span>
+                    <div id="meterstand_dal_verbruik_totaal" title="fout niet gezet.">
+                    <span class="fa-layers fa-fw text-4">
+                        <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                        <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
+                      </span>
+                    <span id="verbruikDal" class="text-4 "></span>
                     </div>
 
-    				<div title="<?php echo strIdx(38);?>">
-						<i class="pad-18 text-4 fab fa-gripfire">&nbsp;</i>&nbsp;<span id="verbruikDGas" class="text-4 pad-6"></span><span class="text-4"> m<sup>3</sup></span>
-					</div>
+                    <div title="<?php echo strIdx(38);?>">
+                        <i class="pad-18 text-4 fab fa-gripfire">&nbsp;</i>&nbsp;<span id="verbruikDGas" class="text-4 pad-6"></span><span class="text-4"> m<sup>3</sup></span>
+                    </div>
                     
                     <div id="watermeter" title="<?php echo strIdx( 73 );?>">
-						<i class="pad-18 text-4 fas fa-tint">&nbsp;</i>&nbsp;<span id="verbruikWater" class="text-4 pad-6">00000.000</span><span class="text-4"> m<sup>3</sup></span>
-					</div>
+                        <i class="pad-18 text-4 fas fa-tint">&nbsp;</i>&nbsp;<span id="verbruikWater" class="text-4 pad-6">00000.000</span><span class="text-4"> m<sup>3</sup></span>
+                    </div>
                     
 
-    			</div>
-    			<div class="pad-14"></div>
-    			<div class="frame-3-top">
-    			<span id="verbruikDalHeader" class="text-3">vandaag</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<!-- <i id="verbruikPiekI" class="pad-6 text-4 far fa-sun"> -->
+                </div>
+                <div class="pad-14"></div>
+                <div class="frame-3-top">
+                <span id="verbruikDalHeader" class="text-3">vandaag</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <!-- <i id="verbruikPiekI" class="pad-6 text-4 far fa-sun"> -->
                     <div id="meterstand_piek_verbruik_dag" title="fout niet gezet.">
-					    <span id="verbruikPiekI" class="fa-layers fa-fw text-4" >
-    					    <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					    <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
-  					    </span>
-					<span id="verbruikPiekKW" class="text-4"></span><br></div>
+                        <span id="verbruikPiekI" class="fa-layers fa-fw text-4" >
+                            <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                            <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
+                          </span>
+                    <span id="verbruikPiekKW" class="text-4"></span><br></div>
                     <div id="meterstand_dal_verbruik_dag" title="fout niet gezet.">
-					<span id="verbruikDalI" class="fa-layers fa-fw text-4">
-    					<i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					<i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
-  					</span>
+                    <span id="verbruikDalI" class="fa-layers fa-fw text-4">
+                        <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                        <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
+                      </span>
                     <span id="verbruikDalKW" class="text-4"></span><br></div>
                     <div title="<?php echo strIdx( 39 );?>">
                     <i class="pad-6 text-4 far fa-clock">&nbsp;</i>&nbsp;<span id="maxkWPiekVerbruikDatum" class="text-4"></span>&nbsp;</div>
                     <div title="<?php echo strIdx( 40 );?>">
-    				<span><i class="pad-6 text-4 fas fa-arrow-circle-up">&nbsp;</i>&nbsp;</span><span id="maxkWPiekVerbruikWaarde" class="text-4"></span></div>
-    				
-    			</div>
-    			<div class="pad-14"></div>
-    			<div class="frame-3-top">
-    			<span class="text-3">totaal vandaag</span>
-    			</div>
-    			<div class="frame-2-bot"> 
+                    <span><i class="pad-6 text-4 fas fa-arrow-circle-up">&nbsp;</i>&nbsp;</span><span id="maxkWPiekVerbruikWaarde" class="text-4"></span></div>
+                    
+                </div>
+                <div class="pad-14"></div>
+                <div class="frame-3-top">
+                <span class="text-3">totaal vandaag</span>
+                </div>
+                <div class="frame-2-bot"> 
                     <div title="<?php echo strIdx( 41 );?>">
                         <i class="pad-6 text-4 fa fa-bolt"></i>&nbsp;<span id="verbruikDalEnPiekKW" class="text-4 pad-6"></span><br>
                         <i class="text-4 fab fa-gripfire"></i>&nbsp;<span id="verbruikGasDag" class="text-4"></span><span class="text-4"> m<sup>3</sup></span><br>
@@ -901,70 +897,70 @@ $(function () {
                     <div title="<?php echo strIdx( 42 );?>">
                         <i class="text-4 fas fa-euro-sign"></i>&nbsp;<span id="verbruikKosten" class="text-4 pad-6"></span>
                     </div>
-    			</div>	
-    		</div>		
-    		<div class="pos-48">
-    		    <div class="frame-3-top">
-    			<span class="text-3">kW verbruikt</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<div id="actVermogenMeterGrafiekVerbruik" class="pos-4"></div>
-    			</div>		
-    		</div>
-    	</div>	
+                </div>    
+            </div>        
+            <div class="pos-48">
+                <div class="frame-3-top">
+                <span class="text-3">kW verbruikt</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <div id="actVermogenMeterGrafiekVerbruik" class="pos-4"></div>
+                </div>        
+            </div>
+        </div>    
     </div>
     
     <!-- rechts -->
     <div class="right-wrapper pad-1">
         <div class="frame-2-top">
-    		<span class="text-2">geleverd</span>
-    	</div>
-    	<div class="frame-2b-bot"> 
-    		<div class="pos-2" id="actVermogenMeterGeleverd"></div>
+            <span class="text-2">geleverd</span>
+        </div>
+        <div class="frame-2b-bot"> 
+            <div class="pos-2" id="actVermogenMeterGeleverd"></div>
             <div class="pos-46" id="actVermogenFaseLevering"></div>
-    		<div class="pos-47 pad-2">
-    			<div class="frame-3-top">
-    			<span id="geleverdPiekHeader" class="text-3">meterstand</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<div id="meterstand_piek_geleverd_totaal" title="fout niet gezet.">
-				
-					<span class="fa-layers fa-fw text-4">
-    					<i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					<i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
-  					</span>
-					
+            <div class="pos-47 pad-2">
+                <div class="frame-3-top">
+                <span id="geleverdPiekHeader" class="text-3">meterstand</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <div id="meterstand_piek_geleverd_totaal" title="fout niet gezet.">
+                
+                    <span class="fa-layers fa-fw text-4">
+                        <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                        <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
+                      </span>
+                    
                     <span id="geleverdPiek" class="text-4"></span>
                     </div>
-    				<div id="meterstand_dal_geleverd_totaal" title="fout niet gezet.">
-					<span class="fa-layers fa-fw text-4">
-    					<i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					<i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
-  					</span>
-					
+                    <div id="meterstand_dal_geleverd_totaal" title="fout niet gezet.">
+                    <span class="fa-layers fa-fw text-4">
+                        <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                        <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
+                      </span>
+                    
                     <span id="geleverdDal" class="text-4 "></span>
                 </div>
 
-    			</div>
-    			<div class="pad-14"></div>
-    			<div class="frame-3-top">
-    			<span id="geleverdDalHeader" class="text-3">vandaag</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<div id="meterstand_piek_geleverd_dag" title="fout niet gezet.">
-					    <span id="geleverdPiekI" class="fa-layers fa-fw text-4">
-    					    <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					    <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
-  					    </span>
+                </div>
+                <div class="pad-14"></div>
+                <div class="frame-3-top">
+                <span id="geleverdDalHeader" class="text-3">vandaag</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <div id="meterstand_piek_geleverd_dag" title="fout niet gezet.">
+                        <span id="geleverdPiekI" class="fa-layers fa-fw text-4">
+                            <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                            <i class="fas fa-long-arrow-alt-up" data-fa-transform="right-4 shrink-1"></i>
+                          </span>
                         <span id="geleverdPiekKW" class="text-4"></span><br>
                     </div>
                     
                     <div id="meterstand_dal_geleverd_dag" title="fout niet gezet.">
-					    <span id="geleverdDalI" class="fa-layers fa-fw text-4">
-    					    <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
-    					    <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
-  					    </span>
-					    <span id="geleverdDalKW" class="text-4"></span><br>
+                        <span id="geleverdDalI" class="fa-layers fa-fw text-4">
+                            <i class="fas fa-euro-sign" data-fa-transform="left-4"></i>
+                            <i class="fas fa-long-arrow-alt-down" data-fa-transform="right-4 shrink-1"></i>
+                          </span>
+                        <span id="geleverdDalKW" class="text-4"></span><br>
                     </div>
 
                     <div title="<?php echo strIdx( 43 );?>">
@@ -973,29 +969,29 @@ $(function () {
                     <div title="<?php echo strIdx( 44 );?>">
                         <i class="pad-6 text-4 fas fa-arrow-circle-up">&nbsp;</i>&nbsp;<span id="maxkWPiekGeleverdWaarde" class="text-4"></span>
                     </div>
-    			</div>
-    			<div class="pad-14"></div>
-    			<div class="frame-3-top">
+                </div>
+                <div class="pad-14"></div>
+                <div class="frame-3-top">
                       <span class="text-3">totaal vandaag</span>
-    			</div>
-    			<div class="frame-2-bot"> 
+                </div>
+                <div class="frame-2-bot"> 
                 <div title="<?php echo strIdx( 45 );?>">
                     <i class="pad-6 text-4 fa fa-bolt"></i>&nbsp;<span id="geleverdDalEnPiekKW" class="text-4"></span><br>
                 </div>
                 <div title="<?php echo strIdx( 46 );?>">
                     <i class="pad-6 text-4 fas fa-euro-sign"></i>&nbsp;<span id="geleverdKosten" class="text-4"></span>
                 </div>
-    			</div>
-    		</div>
-    		<div class="pos-48">
-    		    <div class="frame-3-top">
-    			<span class="text-3">kW geleverd</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    				<div id="actVermogenMeterGrafiekGeleverd" class="pos-4"></div>
-    			</div>		
-    		</div>
-        </div>	
+                </div>
+            </div>
+            <div class="pos-48">
+                <div class="frame-3-top">
+                <span class="text-3">kW geleverd</span>
+                </div>
+                <div class="frame-2-bot"> 
+                    <div id="actVermogenMeterGrafiekGeleverd" class="pos-4"></div>
+                </div>        
+            </div>
+        </div>    
         <!-- <div class="pos-46x" id="actVermogenFaseLevering"></div> -->
     </div>
 </div>

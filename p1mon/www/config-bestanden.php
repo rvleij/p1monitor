@@ -53,14 +53,14 @@ if ( isset($_POST["dboxauth"]) ) {
 }
 
 if ( isset($_POST["dbx_data_active"]) ) { 
-	if ( $err_cnt == -1 ) $err_cnt=0;
-	if ($_POST["dbx_data_active"] == '1' ) {
-		#echo "on<br>";
-		if ( updateConfigDb("update config set parameter = '1' where ID = 50"))$err_cnt += 1;
-	} else {
-		#echo "off<br>";
-		if ( updateConfigDb("update config set parameter = '0' where ID = 50"))$err_cnt += 1;
-	}
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ($_POST["dbx_data_active"] == '1' ) {
+        #echo "on<br>";
+        if ( updateConfigDb("update config set parameter = '1' where ID = 50"))$err_cnt += 1;
+    } else {
+        #echo "off<br>";
+        if ( updateConfigDb("update config set parameter = '0' where ID = 50"))$err_cnt += 1;
+    }
 }
 
 if ( isset($_POST["faseDB_active"]) ) { 
@@ -130,9 +130,9 @@ function readJsonApiConfiguration(){
 
 
 function LoadData() {
-	clearTimeout(initloadtimer);
-	readJsonApiConfiguration()
-	initloadtimer = setInterval(function(){LoadData();}, 5000);
+    clearTimeout(initloadtimer);
+    readJsonApiConfiguration()
+    initloadtimer = setInterval(function(){LoadData();}, 5000);
 }
 
 $(function () {
@@ -149,109 +149,106 @@ $(function () {
     LoadData(); 
 });
 </script>
-  <div class="top-wrapper">
-            <div class="content-wrapper">
-                 <?php page_header();?>
-            </div>
-        </div>
-		
+
+        <?php page_header();?>
+        
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">
                 <!-- header 2 -->
                  <?php pageclock(); ?>
             </div>
-			 <?php config_buttons(0);?>
+             <?php config_buttons(0);?>
         </div> <!-- end top wrapper-2 -->
-		
-		<div class="mid-section">
-			<div class="left-wrapper-config"> <!-- left block -->
-				<?php menu_control(3);?>
-			</div>
-			
-			<div id="right-wrapper-config"> <!-- right block -->
-			<!-- inner block right part of screen -->
-				<div id="right-wrapper-config-left-2">
-					<!-- start of content -->
-					<form name="formvalues" id="formvalues" method="POST">
-						
-						<div class="frame-4-top">
-							<span class="text-15">lokaal bestanden delen</span>
-						</div>
-						<div class="frame-4-bot">
-							<div class='pad-12'>
-								<input class="cursor-pointer" id="fs_rb_hidden" name="samba" type="radio" value="uit" <?php readFileShareStatus('uit'); ?>>Uit
-								<input class="cursor-pointer" id="fs_rb_data"   name="samba" type="radio" value="data"<?php readFileShareStatus('data');?>>Database
-								<input class="cursor-pointer" id="fs_rb_dev"    name="samba" type="radio" value="dev" <?php readFileShareStatus('dev'); ?>>Ontwikkeling
-							</div>
-						</div>
+        
+        <div class="mid-section">
+            <div class="left-wrapper-config"> <!-- left block -->
+                <?php menu_control(3);?>
+            </div>
+            
+            <div id="right-wrapper-config"> <!-- right block -->
+            <!-- inner block right part of screen -->
+                <div id="right-wrapper-config-left-2">
+                    <!-- start of content -->
+                    <form name="formvalues" id="formvalues" method="POST">
+                        
+                        <div class="frame-4-top">
+                            <span class="text-15">lokaal bestanden delen</span>
+                        </div>
+                        <div class="frame-4-bot">
+                            <div class='pad-12'>
+                                <input class="cursor-pointer" id="fs_rb_hidden" name="samba" type="radio" value="uit" <?php readFileShareStatus('uit'); ?>>Uit
+                                <input class="cursor-pointer" id="fs_rb_data"   name="samba" type="radio" value="data"<?php readFileShareStatus('data');?>>Database
+                                <input class="cursor-pointer" id="fs_rb_dev"    name="samba" type="radio" value="dev" <?php readFileShareStatus('dev'); ?>>Ontwikkeling
+                            </div>
+                        </div>
                         <p></p>
                        
                         <div class="frame-4-top">
-							<span class="text-15">Database wissen</span><span><i class="color-warning fas fa-exclamation-triangle fa-1x" data-fa-transform="up-1 right-15"></i></span> 
-						</div>
-						<div class="frame-4-bot">
+                            <span class="text-15">Database wissen</span><span><i class="color-warning fas fa-exclamation-triangle fa-1x" data-fa-transform="up-1 right-15"></i></span> 
+                        </div>
+                        <div class="frame-4-bot">
                             
-                        <div class="float-left margin-3">	
+                        <div class="float-left margin-3">    
                             <button class="input-2 but-1 cursor-pointer" id="db_erase_button" name="db_erase_button" type="submit">
-                                <i class="color-menu fas fa-3x fa-trash-alt"></i><br>	
+                                <i class="color-menu fas fa-3x fa-trash-alt"></i><br>    
                                 <span class="color-menu text-7">&nbsp;wissen</span>
                             </button>
                         </div>
 
-						</div>
+                        </div>
                         <p></p>
 
-						<div class="frame-4-top">
-							<span class="text-15">DropBox API configuratie</span>
-						</div>
-						<div class="frame-4-bot">
-							<div class="float-left">				
-								<label class="text-10">1: DropBox authenticatie code opvragen.</label>
-								<a href="./dropbox-redirect.php" target="_blank"><span><i class="color-menu fab fa-dropbox fa-2x" data-fa-transform="down-5 right-5"></i></span></a>
-							</div>
-							
-							<div class="float-left pad-14">				
-								<label class="text-10">2: Knip en plak de code van Dropbox hier en sla deze op.</label><input class="input-9 color-settings color-input-back" id="dboxauth"  name="dboxauth" type="text">
-							</div>
-							
-							<div class="float-left pad-22">				
-								<label class="text-10">Laatste succesvolle authenticatie: </label><label id='dbx_timestamp' class="text-10">yyyy-mm-dd hh:mm:ss</label>
-							</div>
-						</div>
+                        <div class="frame-4-top">
+                            <span class="text-15">DropBox API configuratie</span>
+                        </div>
+                        <div class="frame-4-bot">
+                            <div class="float-left">                
+                                <label class="text-10">1: DropBox authenticatie code opvragen.</label>
+                                <a href="./dropbox-redirect.php" target="_blank"><span><i class="color-menu fab fa-dropbox fa-2x" data-fa-transform="down-5 right-5"></i></span></a>
+                            </div>
+                            
+                            <div class="float-left pad-14">                
+                                <label class="text-10">2: Knip en plak de code van Dropbox hier en sla deze op.</label><input class="input-9 color-settings color-input-back" id="dboxauth"  name="dboxauth" type="text">
+                            </div>
+                            
+                            <div class="float-left pad-22">                
+                                <label class="text-10">Laatste succesvolle authenticatie: </label><label id='dbx_timestamp' class="text-10">yyyy-mm-dd hh:mm:ss</label>
+                            </div>
+                        </div>
 
-						<p></p>
-						<div class="frame-4-top">
-							<span class="text-15">Dropbox gegevens delen</span>
-						</div>
-						<div class="frame-4-bot">
-							<div class='pad-12'>
-								<input class="cursor-pointer" id="fs_rb_aan_dbx" name="dbx_data_active" type="radio" value="1" <?php if ( config_read(50) == 1 ) { echo 'checked'; }?>>Aan
-								<input class="cursor-pointer" id="fs_rb_uit_dbx" name="dbx_data_active" type="radio" value="0" <?php if ( config_read(50) == 0 ) { echo 'checked'; }?>>Uit
-							</div>
+                        <p></p>
+                        <div class="frame-4-top">
+                            <span class="text-15">Dropbox gegevens delen</span>
+                        </div>
+                        <div class="frame-4-bot">
+                            <div class='pad-12'>
+                                <input class="cursor-pointer" id="fs_rb_aan_dbx" name="dbx_data_active" type="radio" value="1" <?php if ( config_read(50) == 1 ) { echo 'checked'; }?>>Aan
+                                <input class="cursor-pointer" id="fs_rb_uit_dbx" name="dbx_data_active" type="radio" value="0" <?php if ( config_read(50) == 0 ) { echo 'checked'; }?>>Uit
+                            </div>
 
-							<p class="p-1"></p>
-							<div class="content-wrapper pos-36" title="<?php echo strIdx(31);?>"> 
-								<div class="pad-23 content-wrapper">
-									<label class="text-10">Succesvol op:</label> 
-								</div>
-								<div class="content-wrapper">
-									<label id="dbx_data_timestamp_succes" class="text-10"></label>
-								</div>
-							</div> 
-							<p class="p-1"></p>
-							
-							<div class="content-wrapper pos-36" title="<?php echo strIdx(32);?>"> 
-								<div class="pad-23 content-wrapper">
-									<label class="text-10">Data status:</label> 
-								</div>
-							</div> 
+                            <p class="p-1"></p>
+                            <div class="content-wrapper pos-36" title="<?php echo strIdx(31);?>"> 
+                                <div class="pad-23 content-wrapper">
+                                    <label class="text-10">Succesvol op:</label> 
+                                </div>
+                                <div class="content-wrapper">
+                                    <label id="dbx_data_timestamp_succes" class="text-10"></label>
+                                </div>
+                            </div> 
+                            <p class="p-1"></p>
+                            
+                            <div class="content-wrapper pos-36" title="<?php echo strIdx(32);?>"> 
+                                <div class="pad-23 content-wrapper">
+                                    <label class="text-10">Data status:</label> 
+                                </div>
+                            </div> 
 
-							<div class="content-wrapper">
-									<label id="dbx_data_status" class="text-10"></label>
-							</div>
+                            <div class="content-wrapper">
+                                    <label id="dbx_data_status" class="text-10"></label>
+                            </div>
 
-						</div>
-						
+                        </div>
+                        
 
                         <p></p>
                         <div class="frame-4-top" title="<?php echo strIdx( 82 );?>">
@@ -267,26 +264,26 @@ $(function () {
                         <!-- placeholder variables for session termination -->
                         <input type="hidden" name="logout" id="logout" value="">
                         <input type="hidden" name="systemaction" id="systemaction" value="">
-					</form>
-				</div>
-				
-				<div id="right-wrapper-config-right-2">
-					<div class="frame-4-top">
-						<span class="text-15">hulp</span>
-					</div>
-					<div class="frame-4-bot text-10">
-						<?php echo strIdx(6);?>
+                    </form>
+                </div>
+                
+                <div id="right-wrapper-config-right-2">
+                    <div class="frame-4-top">
+                        <span class="text-15">hulp</span>
+                    </div>
+                    <div class="frame-4-bot text-10">
+                        <?php echo strIdx(6);?>
                         <p></p>
                         <?php echo strIdx(71);?>
-						<p></p>
-						<?php echo strIdx(30);?>
                         <p></p>
-						<?php echo strIdx( 82 );?>
-					</div>
-				</div>
-			</div>	
-			<!-- end inner block right part of screen -->
-	</div>
+                        <?php echo strIdx(30);?>
+                        <p></p>
+                        <?php echo strIdx( 82 );?>
+                    </div>
+                </div>
+            </div>    
+            <!-- end inner block right part of screen -->
+    </div>
     <?php echo div_err_succes();?>
 
 
@@ -298,11 +295,11 @@ $(function () {
 <script>
 
 function setUpCancelBar(text) {
-	progressPct = 0;
-	$('#cancel_bar_text').html( text+"&nbsp;&nbsp;" );
-	showStuff('cancel_bar');
-	clearInterval(progress);
-	progress = setInterval(function(){ progressIndicator();},20);
+    progressPct = 0;
+    $('#cancel_bar_text').html( text+"&nbsp;&nbsp;" );
+    showStuff('cancel_bar');
+    clearInterval(progress);
+    progress = setInterval(function(){ progressIndicator();},20);
 }
 
 
@@ -312,7 +309,7 @@ $('#db_erase_button').click( function(event) {
     console.log ('db_erase')
     action = 'db_erase' 
     setUpCancelBar("Onderbreek database wissen&nbsp;&nbsp;");
-	event.preventDefault();	
+    event.preventDefault();    
 });
 
 
@@ -329,14 +326,14 @@ function progressIndicator() {
         return;
     }
     progressPct=progressPct+0.1;
-    $('#progressbar').width( progressPct+'%' );	
+    $('#progressbar').width( progressPct+'%' );    
 }
 
 
-$('#cancel_bar').click(function() {	
-	hideStuff('cancel_bar');
-	progressPct = 0;
-	clearInterval(progress);	
+$('#cancel_bar').click(function() {    
+    hideStuff('cancel_bar');
+    progressPct = 0;
+    clearInterval(progress);    
 });
 
 </script>

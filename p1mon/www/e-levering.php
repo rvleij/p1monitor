@@ -451,18 +451,14 @@ $(function () {
 
     <body>
 
-        <div class="top-wrapper">
-            <div class="content-wrapper">
-                <?php page_header();?>
-            </div>
-        </div>
+        <?php page_header();?>
 
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">
                 <!-- header 2 --> 
-				 <?php pageclock(); ?>
-				 <?php page_menu_header_actual(1); ?>
-				 <?php weather_info(); ?>
+                 <?php pageclock(); ?>
+                 <?php page_menu_header_actual(1); ?>
+                 <?php weather_info(); ?>
             </div>
         </div>
 

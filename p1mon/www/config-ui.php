@@ -207,6 +207,20 @@ if ( isset($_POST["drie_fasen"]) ) {
     }
 }
 
+if ( isset($_POST["ui_header"]) ) { 
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ($_POST["ui_header"] == '1' ) {
+        #echo "on<br>";
+        if ( updateConfigDb("update config set parameter = '1' where ID = 134"))$err_cnt += 1;
+    } else {
+        #echo "off<br>";
+        if ( updateConfigDb("update config set parameter = '0' where ID = 134"))$err_cnt += 1;
+    }
+}
+
+
+
+
 if ( isset($_POST["scrsav_wait"]) ) { 
     if ( $err_cnt == -1 ) $err_cnt=0;
     if ( updateConfigDb("update config set parameter = '".preg_replace('/\D/', '', $_POST["scrsav_wait"])."' where ID = 79"))$err_cnt += 1;
@@ -434,12 +448,9 @@ function makeSelectorAmpere( $id ) {
 <script src="./js/jquery.validate.min.js"></script>
 </head>
 <body>
-  <div class="top-wrapper">
-            <div class="content-wrapper">
-                 <?php page_header();?>
-            </div>
-        </div>
-        
+
+        <?php page_header();?>
+
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">
                 <!-- header 2 -->
@@ -630,6 +641,7 @@ function makeSelectorAmpere( $id ) {
                                 <div class="float-left">
                                     <div class="text-10">voorspelling aan in de UI</div>
                                     <div class="text-10">drie fasen informatie zichtbaar in de UI</div>
+                                    <div class="text-10">P1 monitor header verbergen</div>
                                 </div>
                                 <!-- right side -->
                                 <div class="float-right">
@@ -640,6 +652,10 @@ function makeSelectorAmpere( $id ) {
                                     <div>
                                         <input class="cursor-pointer" name="drie_fasen" type="radio" value="1" <?php if ( config_read(61) == 1 ) { echo 'checked'; }?>>Aan
                                         <input class="cursor-pointer" name="drie_fasen" type="radio" value="0" <?php if ( config_read(61) == 0 ) { echo 'checked'; }?>>Uit
+                                    </div>
+                                    <div>
+                                        <input class="cursor-pointer" name="ui_header" type="radio" value="1" <?php if ( config_read(134) == 1 ) { echo 'checked'; }?>>Aan
+                                        <input class="cursor-pointer" name="ui_header" type="radio" value="0" <?php if ( config_read(134) == 0 ) { echo 'checked'; }?>>Uit
                                     </div>
                                 </div>
                             </div>

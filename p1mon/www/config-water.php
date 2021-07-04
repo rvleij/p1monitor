@@ -102,7 +102,7 @@ if( isset($_POST["gpio_water"]) ) { //ok
 <!doctype html>
 <html lang="nl">
 <head>
-<title>Energie levering configuratie</title>
+<title>Water levering configuratie</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
 <link type="text/css" rel="stylesheet" href="./css/p1mon.css" />
@@ -135,7 +135,7 @@ function readJsonApiStatus(){
    });
 }
 
-function readJsonApiHistoryPowerDay( cnt ){ 
+function  readJsonApiHistoryWater( cnt ){ 
     $.getScript( "/api/v2/watermeter/day?limit=" + cnt, function( data, textStatus, jqxhr ) {
         try {
         var jsondata = JSON.parse(data); 
@@ -168,7 +168,7 @@ function LoadData() {
     timout_setting = 2000
     clearTimeout(initloadtimer);
     readJsonApiStatus();
-    readJsonApiHistoryPowerDay( 1 );
+       readJsonApiHistoryWater( 1 );
     if ( document.getElementById('counter_status').style.display == "block" ) {
         readUpgradeLogging();
         timout_setting = 150;
@@ -181,14 +181,9 @@ $(function () {
     LoadData();
 });
 
-
 </script>
 
-    <div class="top-wrapper">
-        <div class="content-wrapper">
-            <?php page_header();?>
-        </div>
-    </div>
+    <?php page_header();?>
 
     <div class="top-wrapper-2">
         <div class="content-wrapper pad-13">
@@ -251,24 +246,23 @@ $(function () {
                                     <input class="cursor-pointer" id="fs_rb_watermeter_off" name="fs_rb_watermeter" type="radio" value="0" <?php if ( config_read( 96 ) == 0 ) { echo 'checked'; }?>>Uit
                                 </div>
                                 <p class="p-1"></p>
-                                <input title='<?php echo strIdx( 92 );?>' class="input-13 color-settings color-input-back" id="puls_liter_value" name="puls_liter_value" type="text" value="<?php echo config_read( 98 );?>">
+                                <input title='<?php echo strIdx( 84 );?>' class="input-13 color-settings color-input-back" id="puls_liter_value" name="puls_liter_value" type="text" value="<?php echo config_read( 98 );?>">
                                 <p class="p-1"></p>
-                                <input title='<?php echo strIdx( 93 );?>' class="input-13 color-settings color-input-back" id="water_m3_value" name="water_m3_value" type="text" value="<?php echo config_read( 99 );?>">
+                                <input title='<?php echo strIdx( 85 );?>' class="input-13 color-settings color-input-back" id="water_m3_value" name="water_m3_value" type="text" value="<?php echo config_read( 99 );?>">
                                 <p class="p-1"></p>
                                 
-                                <input title='<?php echo strIdx( 96 );?>' placeholder="YYYY-MM-DD HH:MM:00" class="input-14 color-settings color-input-back" id="timestamp_watermeter" name="timestamp_watermeter" type="text" value="<?php echo config_read( 100 );?>" >
+                                <input title='<?php echo strIdx( 86 );?>' placeholder="YYYY-MM-DD HH:MM:00" class="input-14 color-settings color-input-back" id="timestamp_watermeter" name="timestamp_watermeter" type="text" value="<?php echo config_read( 100 );?>" >
                                 <p class="p-1"></p>
 
-                                <div title='<?php echo strIdx( 94 );?>'>
+                                <div title='<?php echo strIdx( 87 );?>'>
                                     <input class="cursor-pointer" id="fs_rb_watermeter_reset_on"  name="fs_rb_watermeter_reset" type="radio" value="1">Aan
                                     <input class="cursor-pointer" id="fs_rb_watermeter_reset_off" name="fs_rb_watermeter_reset" type="radio" value="0" checked>Uit
                                 </div>
                                 <p class="p-1"></p>
-                                <div title='<?php echo strIdx( 97 );?>' class="text-10 pad-20" ><span id="verbruikWater">onbekend</span></div>
+                                <div title='<?php echo strIdx( 89 );?>' class="text-10 pad-20" ><span id="verbruikWater">onbekend</span></div>
                                 <p class="p-1"></p>
                                 
-                                
-                                <div title='<?php echo strIdx( 95 );?>' class="text-10 pad-20" ><span id="watermeter_puls_timestamp">onbekend</span></div>
+                                <div title='<?php echo strIdx( 90 );?>' class="text-10 pad-20" ><span id="watermeter_puls_timestamp">onbekend</span></div>
                             </div>
                         </div>
                         <p></p>

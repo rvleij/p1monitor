@@ -21,14 +21,15 @@
 # versie 202009-0.9.18 aanzienlijke aanpassing aan de API om de IOS app te ondersteunen.
 # versie 202012-1.0.0 Versie met support voor S0 puls kWh meting.
 # Versie 1.1.0 Watermeter kan nu ook minuut waarden verwerken. 
+# Versie 1.2.0 log file viewer toegevoegd.
 
 ###########################################
 # onderstaande drie versie constanten bij #
 # elke release aanpassen                  #
 ###########################################
-P1_VERSIE                       = "1.1.0"       # semantische versie nummers.
+P1_VERSIE                       = "1.2.0"       # semantische versie nummers.
 P1_PATCH_LEVEL                  = "0"           # standaard op 0, wordt verhoogd als op een image een patch wordt uigevoerd.
-P1_SERIAL_VERSION               = "20210211"    # moet altijd gewijzigd worden bij een nieuwe versie
+P1_SERIAL_VERSION               = "20210303"    # moet altijd gewijzigd worden bij een nieuwe versie
 
 
 #CRYPTO_SEED                     ="bee31cd96a3ce221"
@@ -41,6 +42,7 @@ ZTATZ_P1_VERSION_TIMESTAMP      ='TIMESTAMP_LOCAL'
 ZTATZ_P1_VERSION                ='P1MON_VERSION'
 ZTATZ_P1_VERSION_TEXT           ='VERSION_TEXT'
 ZTATZ_P1_VERSION_DOWNLOAD_URL   ='DOWNLOAD_URL'
+ZTATZ_P1_SERIAL_VERSION         ='SERIAL_VERSION'
 API_BASIC_JSON_PREFIX           ='basic.'
 API_BASIC_JSON_SUFFIX           ='.json'
 API_BASIC_VERSION               =6
@@ -102,6 +104,7 @@ DIR_UPGRADE_ASSIST_WIFI         =DIR_UPGRADE_ASSIST +"/wifi"
 DIR_UPGRADE_ASSIST_USB_MOUNT    ='/p1mon/mnt/usb'
 #DIR_TMP                         ="/p1mon/var/tmp/"
 DIR_DOWNLOAD                    ="/p1mon/www/download/"
+DIR_WWW_CUSTOM                  ="/p1mon/www/custom"
 EXPORT_PREFIX                   ="p1mon-sql-export"
 IMPORT_PREFIX                   ="p1mon-sql-import"
 
@@ -132,6 +135,7 @@ FILE_EXPORT_MANIFEST            ="/p1mon/var/tmp/manifest.json"
 FILE_UPGRADE_ASSIST_STATUS      ="/p1mon/mnt/ramdisk/upgrade-assist.status"
 FILE_POWERPRODUCTION_CNT_STATUS ="/p1mon/mnt/ramdisk/powerproduction-counter-reset.status"
 FILE_WATERMETER_CNT_STATUS      ="/p1mon/mnt/ramdisk/watermeter-counter-reset.status"
+FILE_SQL_IMPORT_STATUS          ="/p1mon/mnt/ramdisk/sqlimport.status"
 TARIEF_VERBR_LAAG               ="0.20522"
 TARIEF_VERBR_HOOG               ="0.20522"
 TARIEF_GELVR_LAAG               ="0.20522"

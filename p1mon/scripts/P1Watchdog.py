@@ -114,9 +114,10 @@ def MainProg():
     # writeSemaphoreFile('debugdump' + '999',flog) # for debug only
     
     #init P1 new version check. Empty status records
-    rt_status_db.strset('',66,flog)
-    rt_status_db.strset('',67,flog)
-    rt_status_db.strset('',68,flog)
+    #rt_status_db.strset( '', 66,  flog )
+    #rt_status_db.strset( '', 67,  flog )
+    #rt_status_db.strset( '', 68,  flog )
+    #rt_status_db.strset( '', 110, flog )
 
     checkForNewP1Version()
     getCpuTemperature() 
@@ -161,7 +162,7 @@ def MainProg():
                 if cmd == 'backup.p1mon':
                     flog.info(inspect.stack()[0][3]+" backup.")
                     makeBackup()
-                if cmd == 'cron.p1mon':
+                if cmd == 'cron.p1mon': #TODO nog nodig?
                     flog.info(inspect.stack()[0][3]+" P1Scheduler.")
                     if os.system('sudo -u p1mon /p1mon/scripts/P1Scheduler.py') > 0:
                         flog.error(inspect.stack()[0][3]+" chron update gefaald.")
@@ -187,7 +188,7 @@ def MainProg():
                 if cmd == 'wifi_aanpassen.p1mon':
                     flog.info(inspect.stack()[0][3]+" Wifi aanpassingen.")
                     #writeLanMacToDisk()
-                    if os.system('sudo /p1mon/scripts/P1SetWifi.py') > 0:
+                    if os.system('sudo /p1mon/scripts/P1SetWifi.py') > 0: #TODO nog nodig?
                         flog.error(inspect.stack()[0][3]+" Wifi aanpassen gefaald.")
                 if cmd == 'upgrade_assist.p1mon':
                     flog.info(inspect.stack()[0][3]+" Upgrade assist save van data gestart")
@@ -234,13 +235,18 @@ def MainProg():
             ## controle of er nog P1 data binnen komt.
             checkForP1Data()
             ## Watermeter reset.
-            checkWatermeterCounterSet()
+            checkWatermeterCounterSetRun()
             ## check if there is an autoimport file
             checkAutoImport()
             ## check P1PowerProductionS0 run or stop
-            checkPowerProductionS0()
+            checkPowerProductionS0Run()
             ## checkWaterMeter run or stop
             checkWaterMeter()
+            ## P1MQTT run or stop
+            checkMQTTRun()
+            ## P1MQTT run or stop
+            checkP1SqlImportRun()
+
 
         # elke 60 sec acties
         if cnt%30 == 0:
@@ -306,7 +312,7 @@ def MainProg():
 # processing #####################
 # 1: check if there is a export file to import with the extention zip.pu1a
 # 2: rename the file to see if we have full access 
-# 3: ceck if there is data in the database before doing a import.
+# 3: check if there is data in the database before doing a import.
 # 4: start the import by running import script
 
 def checkAutoImport():
@@ -396,6 +402,76 @@ def checkAutoImport():
 
 
 ########################################################
+# checks if the Sql database script must run or must   #
+# run                                                  #
+########################################################
+def checkP1SqlImportRun():
+
+    #flog.setLevel( logging.DEBUG )
+
+    try:
+        prg_name = "P1SqlImport.py" 
+       
+        _id, run_status, _label = config_db.strget( 137, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug( inspect.stack()[0][3] + ": P1SqlImport run status is = " + str( run_status ) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) > 0 and len( pid_list) == 0: # start process
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " wordt gestart." )
+            if os.system('/p1mon/scripts/' + prg_name + ' 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " start gefaald." )
+                
+        """
+        #########################################################################
+        # fail save, the program self does also a check if it should be active. #
+        #########################################################################
+        if int( run_status ) == 0 and len( pid_list ) > 0: # stop process.
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " wordt gestopt." )
+            for pid in pid_list:
+                flog.info( inspect.stack()[0][3] + ": pid = " + str(pid) + " wordt gestopt.")
+                os.kill( pid, signal.SIGINT ) # do a nice stop
+        """
+
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+
+    #flog.setLevel( logging.INFO )
+
+
+########################################################
+# checks if the MQTT script must run or must be        #
+# stopped                                              #
+########################################################
+def checkMQTTRun():
+
+    #flog.setLevel( logging.DEBUG )
+
+    try:
+        prg_name = "P1MQTT.py" 
+       
+        _id, run_status, _label = config_db.strget( 135, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug( inspect.stack()[0][3] + ": P1MQTT run status is = " + str( run_status ) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) == 1 and len( pid_list) == 0: # start process
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " wordt gestart." )
+            if os.system('/p1mon/scripts/' + prg_name + ' 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " start gefaald." )
+        #########################################################################
+        # fail save, the program self does also a check if it should be active. #
+        #########################################################################
+        if int( run_status ) == 0 and len( pid_list ) > 0: # stop process.
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " wordt gestopt." )
+            for pid in pid_list:
+                flog.info( inspect.stack()[0][3] + ": pid = " + str(pid) + " wordt gestopt.")
+                os.kill( pid, signal.SIGINT ) # do a nice stop
+
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+
+    #flog.setLevel( logging.INFO )
+
+########################################################
 # checks if the watermeter script must run or must be  #
 # stopped                                              #
 ########################################################
@@ -405,7 +481,7 @@ def checkWaterMeter():
        
         _id, run_status, _label = config_db.strget( 96, flog )
         pid_list, _process_list = listOfPidByName( prg_name )
-        flog.debug(inspect.stack()[0][3] + ": checkWaterMeterwant to run status is = " + str(run_status) + " aantal gevonden PID = " + str(len(pid_list) ) )
+        flog.debug(inspect.stack()[0][3] + ": checkWaterMeter want to run status is = " + str(run_status) + " aantal gevonden PID = " + str(len(pid_list) ) )
 
         if int(run_status) == 1 and len( pid_list) == 0: # start process
             flog.info(inspect.stack()[0][3] + ": " + prg_name + " wordt gestart." )
@@ -423,12 +499,11 @@ def checkWaterMeter():
     except Exception as e:
         flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
 
-
 ########################################################
 # checks if the S0 Power productions script must run   #
 # or must be stopped                                   #
 ########################################################
-def checkPowerProductionS0():
+def checkPowerProductionS0Run():
     try:
         prg_name = "P1PowerProductionS0.py" 
        
@@ -451,7 +526,6 @@ def checkPowerProductionS0():
 
     except Exception as e:
         flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
-
 
 def restartWatermeterProcess( reason = '??????' ):
     try:
@@ -483,7 +557,7 @@ def restartWatermeterProcess( reason = '??????' ):
     except Exception as e:
         flog.error( inspect.stack()[0][3] + ": Watermeter " + reason + " aanpassing gefaald door fout " + str(e) )
 
-def checkWatermeterCounterSet():
+def checkWatermeterCounterSetRun():
     # watermeter reset
     _config_id, reset_watermeter_is_on, _text = config_db.strget( 101,flog )
     if int(reset_watermeter_is_on) == 1:
@@ -548,6 +622,10 @@ def getCpuTemperature(): #P3 ok
     tempC = temp/1000
     rt_status_db.strset( str(tempC), 69, flog )
 
+########################################################
+# checks there is a new P1 sofware version available   #
+# by an https url request to www.ztatz.nl              #
+########################################################
 def checkForNewP1Version(): #P3 ok
     #flog.setLevel(logging.DEBUG)
     global next_version_timestamp
@@ -559,38 +637,45 @@ def checkForNewP1Version(): #P3 ok
         next_version_timestamp = 0 # forces to read the version information on toggle.
         return
 
-     # all ready new version info, do nothing. 
-    _id, status, _label, _security = rt_status_db.strget(66, flog) # get p1 version text.
-    if len(status) > 0:
-        flog.debug(inspect.stack()[0][3]+': nieuwe versie datum is al aanwezig, geen data opgehaald.')
-        return
-   
     # time out check.
     if next_version_timestamp > util.getUtcTime(): 
         flog.debug(inspect.stack()[0][3]+': nog ' + str ( abs( util.getUtcTime() - next_version_timestamp) ) + ' seconden te gaan voor volgende poging.')
+        #flog.setLevel(logging.INFO)
         return
 
     try :
         # timeout in seconds
-        socket.setdefaulttimeout(5)
+        socket.setdefaulttimeout( 5 )
 
         url = const.ZTATZ_P1_VERSION_URL
-        request = urllib.request.Request(url)
+        #url =  "https://www.ztatz.nl/p1monitor/version-test.json
+        request = urllib.request.Request( url + "?" + const.P1_VERSIE  )
         response = urllib.request.urlopen(request)
         data = json.loads( response.read().decode('utf-8') )
         if data[const.ZTATZ_P1_VERSION] != const.P1_VERSIE:
-            flog.info(inspect.stack()[0][3]+': nieuw versie nummer is '+str(data[const.ZTATZ_P1_VERSION]))
-            rt_status_db.strset( data[const.ZTATZ_P1_VERSION],              66, flog )
-            rt_status_db.strset( data[const.ZTATZ_P1_VERSION_TIMESTAMP],    67, flog )
-            rt_status_db.strset( data[const.ZTATZ_P1_VERSION_TEXT],         68, flog )
-            rt_status_db.strset( data[const.ZTATZ_P1_VERSION_DOWNLOAD_URL], 86, flog )
+            flog.info(inspect.stack()[0][3]+': nieuwe versie ' + str(data[const.ZTATZ_P1_VERSION]) +\
+            ' beschikbaar van de P1 monitor software met versie serienummer ' + str(data[const.ZTATZ_P1_SERIAL_VERSION]) + '.' )
+            rt_status_db.strset( data[const.ZTATZ_P1_VERSION],              66,  flog )
+            rt_status_db.strset( data[const.ZTATZ_P1_VERSION_TIMESTAMP],    67,  flog )
+            rt_status_db.strset( data[const.ZTATZ_P1_VERSION_TEXT],         68,  flog )
+            rt_status_db.strset( data[const.ZTATZ_P1_VERSION_DOWNLOAD_URL], 86,  flog )
+            rt_status_db.strset( data[const.ZTATZ_P1_SERIAL_VERSION],       110, flog )
         else:
-            flog.info(inspect.stack()[0][3]+': geen nieuw versie aanwezig, versie is '+str(data[const.ZTATZ_P1_VERSION]))
-        next_version_timestamp = util.getUtcTime() + 43200 + random.randint(300, 3600) #43200 = 12 uur. random add 5 to 60 min before repeat.
+            flog.info(inspect.stack()[0][3]+': geen nieuwe versie aanwezig, huidige versie is '+ str(data[const.ZTATZ_P1_VERSION]) + ' met versie serienummer ' + str(data[const.ZTATZ_P1_SERIAL_VERSION]) )
+            #init P1 new version check. Empty status records
+            rt_status_db.strset( '', 66,  flog )
+            rt_status_db.strset( '', 67,  flog )
+            rt_status_db.strset( '', 68,  flog )
+            rt_status_db.strset( '', 110, flog )
+        
+        next_version_timestamp = util.getUtcTime() + 82800 + random.randint(300, 3600) #82800 = 23 uur. random add 5 to 60 min before repeat.
+        #next_version_timestamp = util.getUtcTime() #TODO
+
     except Exception as e:
          flog.error(inspect.stack()[0][3]+': ophalen remote versie informatie gefaald -> ' + str(e) )
      
     #flog.setLevel(logging.INFO)
+
 
 def databaseRam2Disk(): #P3 ok
     os.system("/p1mon/scripts/P1DbCopy.py --allcopy2disk --forcecopy")
@@ -602,7 +687,7 @@ def makeDebugDump(id): #P3 ok
     if os.system('sudo /p1mon/scripts/debugdump.sh '+ id ) > 0:
         flog.error(inspect.stack()[0][3]+" debug dump gefaald.")
 
-def makeCustomWwwImport(id): #P3 ok
+def makeCustomWwwImport(id): #TODO 2021-03-07: wordt niet meer gebruikt door P1SqlImport.py controleren of deze code er uit kan 
     #print id
     if os.system('sudo /p1mon/scripts/in_ex_custom_www.sh import '+ const.FILE_PREFIX_CUSTOM_UI + id + ".gz" ) > 0:
         flog.error(inspect.stack()[0][3]+" custom www import gefaald.")

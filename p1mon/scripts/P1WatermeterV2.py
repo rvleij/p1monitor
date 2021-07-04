@@ -91,7 +91,7 @@ def Main(argv):
 
         _id, run_status, _label = config_db.strget( 96, flog )
         if int(run_status) == 0: # stop process
-            flog.info(inspect.stack()[0][3]+": programma is niet als actief geconfigureerd, prgramma wordt gestopt.")
+            flog.info(inspect.stack()[0][3]+": programma is niet als actief geconfigureerd, programma wordt gestopt.")
             stop()
 
         #flog.debug( inspect.stack()[0][3]+": loop " )
@@ -102,7 +102,7 @@ def Main(argv):
             flog.debug( inspect.stack()[0][3] + ": GPIO pin wordt opnieuw geprobeerd.") 
             time.sleep( 30 ) # wait to limit load
             try:
-                gpioPowerS0Puls.init( 97, config_db ,flog )
+                gpioWaterPuls.init( 97, config_db ,flog )
             except:
                 pass
 
@@ -330,7 +330,7 @@ def addMissingRecords():
         min_timestamp           = rec[0][2] # oldest timestamp.
         #print ( sql )
     except Exception as e:
-            flog.error( inspect.stack()[0][3]+": sql error voor record gap analyse op table " + const.DB_WATERMETERV2_TAB + " ->" + str(e) )
+        flog.error( inspect.stack()[0][3]+": sql error voor record gap analyse op table " + const.DB_WATERMETERV2_TAB + " ->" + str(e) )
 
     flog.debug( inspect.stack()[0][3] + " aantal records in database dat ontbreekt = " + str(missing_records_count) +\
          " timestamp min = " + str(min_timestamp) + " timestamp max = " + str(max_timestamp))
@@ -514,7 +514,7 @@ def waitForPuls():
         rt_status_db.timestamp( 90, flog ) # set timestamp of puls detected
         timestamp = mkLocalTimeString()
 
-        #flog.debug( inspect.stack()[0][3]+": S0 puls gedetecteerd." )
+        #flog.debug( inspect.stack()[0][3]+": water puls gedetecteerd." )
         _id, puls_value_per_liter, _label = config_db.strget( 98, flog ) 
 
         # process minute records

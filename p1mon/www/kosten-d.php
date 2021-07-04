@@ -71,7 +71,8 @@ function readJsonApiFinancial( cnt ){
             GGasDataGelvr.length    = 0;
             GNettoCost.length       = 0;
             GWaterDataGelvr.length  = 0;
-
+            GExtraData.length       = 0;
+            
         for (var j = jsondata.length; j > 0; j--){    
             item = jsondata[ j-1 ];
             item[1] = item[1] * 1000; // highchart likes millisecs.
@@ -82,47 +83,53 @@ function readJsonApiFinancial( cnt ){
             GGasDataGelvr.push   ( [item[1], item[6] ]);
             GNettoCost.push      ( [item[1], ( item[2] + item[3] + item[6] + item[7] ) - ( item[4] +item[5] ) ]); 
             GWaterDataGelvr.push ( [item[1], item[7] ]); // water added
+            GExtraData.push( [item[1], costLimit, -1, -1, -1, -1 ] );
         }  
 
-        readJsonApiHistoryDay( cnt );
-        //updateData();
-
+        readJsonApiPowerGas( cnt );
+       
         } catch(err) {
             console.error( err )
         }
     });
 }
 
-function readJsonApiHistoryDay( cnt ){ 
+function readJsonApiPowerGas( cnt ){ 
     $.getScript( "/api/v1/powergas/day?limit=" + cnt, function( data, textStatus, jqxhr ) {
       try {
         var jsondata = JSON.parse(data); 
-        recordsLoaded       = jsondata.length;
-        GExtraData.length   = 0;
-        for (var j = jsondata.length; j > 0; j--){    
-            item = jsondata[ j-1 ];
-            item[1] = item[1] * 1000; // highchart likes millisecs.
-            GExtraData.push( [item[1], costLimit, item[6], item[7], item[9], 0 ] );   //KWhVerbruikt, kWhLevering, GasM3Verbruik. stub for water M3, filled later.
+        
+        for (var j = 0; j < jsondata.length; j++){    
+            var item = jsondata[ j ];
+            for ( var k=0 ; k < GpiekDataVerbr.length; k++ ) {
+                if ( GpiekDataVerbr[k][0] == item[1] * 1000 ) {
+                    GExtraData[k][2] = item[6]
+                    GExtraData[k][3] = item[7]
+                    GExtraData[k][4] = item[9]
+                    break;
+                }
+            }
         }
-        readJsonApiWaterDay ( cnt );
+
+        readJsonApiWater ( cnt );
       } catch(err) {}
    });
 }
 
-function readJsonApiWaterDay( cnt ){ 
+function readJsonApiWater( cnt ){ 
     $.getScript( "/api/v2/watermeter/day?limit=" + cnt, function( data, textStatus, jqxhr ) {
       try {
         var jsondata = JSON.parse(data); 
-        for( var j=0; j<jsondata.length; j++ ) {
-            for ( var n=0; n<GExtraData.length; n++) {
-                if ( (jsondata[j][1] * 1000) == GExtraData[n][0] ) {
-                     //console.log ( jsondata[j][1] * 1000 )
-                     //console.log ( GExtraData[n][0] )
-                     //console.log ( jsondata[j][3] / 1000 ) 
-                     GExtraData[n][5] = ( jsondata[j][3] / 1000 ) // convert L to M3 en replace the stub value
+
+        for (var j = 0; j < jsondata.length; j++){    
+            var item = jsondata[ j ];
+            for ( var k=0 ; k < GpiekDataVerbr.length; k++ ) {
+                if ( GpiekDataVerbr[k][0] == item[1] * 1000 ) {
+                    GExtraData[k][5] = item[3]
+                    break;
                 }
             }
-        }
+        }  
         updateData();
       } catch(err) {}
    });
@@ -258,7 +265,7 @@ function createCostChart() {
             },
             xAxis: {
                 events: {
-                    setExtremes: function(e) {  	
+                    setExtremes: function(e) {      
                         if(typeof(e.rangeSelectorButton)!== 'undefined') {
                             for (var j = 0;  j < GselectText.length; j++){    
                                 if ( GselectText[j] == e.rangeSelectorButton.text ) {
@@ -361,12 +368,13 @@ function createCostChart() {
                 var kWhLevering      = 'onbekend';
                 var GasM3Verbruikt   = 'onbekend';
                 var WaterM3Verbruikt = 'onbekend';
-                // AANGEPAST MET NIEUWE API
-                if ( GExtraData[index][1] !== null ) { KWhVerbruikt     = GExtraData[index][2].toFixed(2); } 
-                if ( GExtraData[index][2] !== null ) { kWhLevering      = GExtraData[index][3].toFixed(2); }
-                if ( GExtraData[index][3] !== null ) { GasM3Verbruikt   = GExtraData[index][4].toFixed(3); }
-                if ( GExtraData[index][4] !== null ) { WaterM3Verbruikt = GExtraData[index][5].toFixed(3); }
-                
+               
+
+                if ( GExtraData[index][2] !== -1 ) { KWhVerbruikt     = GExtraData[index][2].toFixed(2); }
+                if ( GExtraData[index][3] !== -1 ) { kWhLevering      = GExtraData[index][3].toFixed(2); }
+                if ( GExtraData[index][4] !== -1 ) { GasM3Verbruikt   = GExtraData[index][4].toFixed(3); }
+                if ( GExtraData[index][5] !== -1 ) { WaterM3Verbruikt = GExtraData[index][5].toFixed(3); }
+
                 var pv1=pv2=dv1=dv2=pg1=pg2=dg1=dg2=pt1=pt2=dt1=dt2=gas1=gas2=net1=net2=gasm21=gasm22=verbrkwh1=verbrkwh2=levrkwh1=levrkwh2=water1=water2=water21=water22='';
                 var totVerbruikt = 0;
                 var totGeleverd  = 0;
@@ -379,7 +387,7 @@ function createCostChart() {
                 //console.log(totGeleverd);
                 //console.log(totaalNetto);
                 
-                if ( $('#CostChartVerbr').highcharts().series[0].visible === true ) {	
+                if ( $('#CostChartVerbr').highcharts().series[0].visible === true ) {    
                     pv1 = '<span style="color: #FFC311;">Piek kosten verbruik:</span><br/>';
                     pv2 = '&nbsp;&euro;&nbsp;'+piekVerbruikt.toFixed(2)+'<br/>';
                 }
@@ -390,16 +398,21 @@ function createCostChart() {
                 
                 if ( $('#CostChartVerbr').highcharts().series[4].visible === true ) {
                     gas1 = '<span style="color: #507ABF;">Gas kosten verbruik:</span><br/>';
-                    gas2 = '&nbsp;&euro;&nbsp;'+gasVerbruikt.toFixed(2) + '&nbsp;(' + GasM3Verbruikt + ' m&#179;)' + '<br/>';
-                    //gasm21 = '<br/>Gas verbruik:';
-                    //gasm22 = '<br/>'+GasM3Verbruikt +' m&#179;';
+                    if ( GasM3Verbruikt !== 'onbekend' ) {
+                        gas2 = '&nbsp;&euro;&nbsp;'+gasVerbruikt.toFixed(2) + '&nbsp;(' + GasM3Verbruikt + ' m&#179;)' + '<br/>';
+                    } else {
+                        gas2 = '&nbsp;&euro;&nbsp;'+gasVerbruikt.toFixed(2) + '&nbsp;(' + GasM3Verbruikt + ' )' + '<br/>';
+                    }
+                    
                 }
                 
                 if ( $('#CostChartVerbr').highcharts().series[5].visible === true ) {
                     water1  = '<span style="color: #6699ff;">Water kosten verbruik:</span><br/>';
-                    water2  = '&nbsp;&euro;&nbsp;' + waterVerbruikt.toFixed(2) + '&nbsp;(' + WaterM3Verbruikt + ' m&#179;)' + '<br/>';
-                    //water21 = '<br/>Water verbruik:';
-                    //water22 = '<br/>' + WaterM3Verbruikt + ' m&#179;'; //+ ' m<sup>3</sup>';
+                    if ( WaterM3Verbruikt !== 'onbekend' ) {
+                        water2  = '&nbsp;&euro;&nbsp;' + waterVerbruikt.toFixed(2) + '&nbsp;(' + WaterM3Verbruikt + ' m&#179;)' + '<br/>';
+                    } else {
+                        water2  = '&nbsp;&euro;&nbsp;' + waterVerbruikt.toFixed(2) + '&nbsp;(' + WaterM3Verbruikt + ' )' + '<br/>';
+                    }
                 }
 
                 if ( $('#CostChartVerbr').highcharts().series[2].visible === true ) {
@@ -411,11 +424,14 @@ function createCostChart() {
                     dg2 = '&nbsp;&euro;&nbsp;'+dalGeleverd.toFixed(2)+'<br/>';
                 }
 
-                //if ( $('#CostChartVerbr').highcharts().series[0].visible === true && $('#CostChartVerbr').highcharts().series[1].visible === true && $('#CostChartVerbr').highcharts().series[5].visible === true && $('#CostChartVerbr').highcharts().series[4].visible === true ) {
                 if ( $('#CostChartVerbr').highcharts().series[0].visible === true && $('#CostChartVerbr').highcharts().series[1].visible === true) {
                     pt1 = '<span style="color: #6E797C;"><b>Totaal verbruikt:</b></span><br/>';
                     pt2 = '&nbsp;&euro;&nbsp;'+totVerbruikt.toFixed(2)+'<br/>';
-                    verbrkwh1 = '<br/>kWh verbruik:'
+                    if ( KWhVerbruikt !== 'onbekend' ) {
+                        verbrkwh2 = '<br/>'+KWhVerbruikt+' kWh'
+                    } else {
+                        verbrkwh2 = '<br/>'+KWhVerbruikt
+                    }
                     verbrkwh2 = '<br/>'+KWhVerbruikt+' kWh'
                 }
 
@@ -423,7 +439,11 @@ function createCostChart() {
                     dt1= '<span style="color: #6E797C;"><b>Totaal geleverd:</b></span><br/>';
                     dt2= '&nbsp;&euro;&nbsp;'+totGeleverd.toFixed(2)+'<br/>';
                     levrkwh1 = '<br/>kWh levering:';
-                    levrkwh2 = '<br/>' + kWhLevering +' kWh';
+                    if ( KWhVerbruikt !== 'onbekend' ) {
+                        levrkwh2 = '<br/>' + kWhLevering +' kWh';
+                    } else {
+                        levrkwh2 = '<br/>' + kWhLevering
+                    }
                 }
 
                 if ( $('#CostChartVerbr').highcharts().series[7].visible === true ) {
@@ -437,40 +457,35 @@ function createCostChart() {
                     net2 = '&nbsp;&euro;&nbsp;'+totaalNetto.toFixed(2)+'<br/>';
                 }
 
-
-                   s += '<div style="width: 260px; z-index: 0">';
-                        s += '<div class="float-left">';
-                            s += pv1;
-                            s += dv1;
-                            s += gas1;
-                            s += water1;
-                            s += pt1;
-                            s += dg1;
-                            s += pg1;
-                            s += dt1;
-                            s += net1;
-                            s += verbrkwh1;
-                            s += levrkwh1;
-                            //s += gasm21;
-                            //s += water21;
-                        s += '</div>';
+                s += '<div style="width: 260px; z-index: 0">';
+                s += '<div class="float-left">';
+                s += pv1;
+                s += dv1;
+                s += gas1;
+                s += water1;
+                s += pt1;
+                s += dg1;
+                s += pg1;
+                s += dt1;
+                s += net1;
+                s += verbrkwh1;
+                s += levrkwh1;
+                s += '</div>';
                     
-                        s += '<div class="float-right">';
-                            s += pv2;
-                            s += dv2;
-                            s += gas2;
-                            s += water2;
-                            s += pt2;
-                            s += dg2;
-                            s += pg2;
-                            s += dt2;
-                            s += net2;
-                            s += verbrkwh2;
-                            s += levrkwh2;
-                            //s += gasm22;
-                            //s += water22;
-                        s += '</div>';
-                 s += '</div>';
+                s += '<div class="float-right">';
+                s += pv2;
+                s += dv2;
+                s += gas2;
+                s += water2;
+                s += pt2;
+                s += dg2;
+                s += pg2;
+                s += dt2;
+                s += net2;
+                s += verbrkwh2;
+                s += levrkwh2;
+                s += '</div>';
+                s += '</div>';
 
                 //console.log(s);
                 return s;
@@ -509,7 +524,6 @@ function createCostChart() {
                 id: 'piek_ver',
                 visible: GseriesVisibilty[0],
                 name: 'Piek verbruik elek.',
-                //color: '#CEA731',
                 color: '#FFC311',
                 data: GpiekDataVerbr 
             }, 
@@ -517,7 +531,6 @@ function createCostChart() {
                 id: 'dal_ver',
                 visible: GseriesVisibilty[1],
                 name: 'Dal verbruik elek.',
-                //color: '#FFC311',
                 color: '#CEA731',
                 data: GdalDataVerbr
             }, 
@@ -525,7 +538,6 @@ function createCostChart() {
                 id: 'piek_gel',
                 visible: GseriesVisibilty[2],
                 name: 'Piek geleverd elek.',
-                //color: '#7FAD1D',
                 color: '#98D023',
                 data: GpiekDataGelvr
             },
@@ -533,7 +545,6 @@ function createCostChart() {
                 id: 'dal_gel',
                 visible: GseriesVisibilty[3],
                 name: 'Dal geleverd elek.',
-                //color: '#98D023',
                 color: '#7FAD1D',
                 data: GdalDataGelvr
             },{
@@ -605,25 +616,6 @@ function updateData() {
     var chart = $('#CostChartVerbr').highcharts();
     if( typeof(chart) !== 'undefined') {
 
-    /*
-    // dont use this gives an update problem
-    for ( index =0;  index<8; index++ ){
-        chart.series[ index ].setData( null, false );
-     }
-
-      chart.series[0].setData( GdalDataVerbr );
-      chart.series[1].setData( GdalDataVerbr );
-      chart.series[2].setData( GpiekDataGelvr );
-      chart.series[3].setData( GdalDataGelvr ); 
-      chart.series[4].setData( GGasDataGelvr ); 
-      chart.series[5].setData( GWaterDataGelvr ); 
-      chart.series[6].setData( GExtraData ); 
-      chart.series[7].setData( GNettoCost ); 
-
-      chart.redraw();
-     */
-
-      
       chart.series[0].update({
        data: GpiekDataVerbr
       });
@@ -700,18 +692,15 @@ $(function() {
 </script>
 </head>
 <body>
-<div class="top-wrapper">
-    <div class="content-wrapper">
-            <?php page_header();?>       
-    </div>
-</div>
+
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">
        <!-- header 2 -->
-	   <?php pageclock(); ?>
-	   <?php page_menu_header_cost(0); ?>
-	   <?php weather_info(); ?>
+       <?php pageclock(); ?>
+       <?php page_menu_header_cost(0); ?>
+       <?php weather_info(); ?>
     </div>
 </div>
 
@@ -723,12 +712,12 @@ $(function() {
     </div> 
     <div class="mid-content-2 pad-13">
     <!-- links -->
-    	<div class="frame-2-top">
-    		<span class="text-2">Euro per dag</span>
-    	</div>
-    	<div class="frame-2-bot"> 
-    	<div id="CostChartVerbr" style="width:100%; height:500px;"></div>	
-    	</div>
+        <div class="frame-2-top">
+            <span class="text-2">Euro per dag</span>
+        </div>
+        <div class="frame-2-bot"> 
+        <div id="CostChartVerbr" style="width:100%; height:500px;"></div>    
+        </div>
 </div>
 </div>
 <div id="loading-data"><img src="./img/ajax-loader.gif" alt="Even geduld aub." height="15" width="128" /></div>   

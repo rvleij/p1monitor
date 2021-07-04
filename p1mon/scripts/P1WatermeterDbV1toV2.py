@@ -1,6 +1,8 @@
 #!/usr/bin/python3
+import argparse
 import const
 import inspect
+import glob
 import os
 import shutil
 import signal
@@ -18,29 +20,83 @@ from util import mkLocalTimeString
 prgname = 'P1WatermeterDbV1toV2'
 
 V2_watermeter_db = WatermeterDBV2()
-V1_watermeter_db = WatermeterDB()
+
+#V1 of the watermeter database, we keep supporting this for older software versions that import data
+watermeter_db_uur     = WatermeterDB()
+watermeter_db_dag     = WatermeterDB()
+watermeter_db_maand   = WatermeterDB()
+watermeter_db_jaar    = WatermeterDB()
 
 def Main(argv): 
     
     my_pid = os.getpid()
     flog.info("Start van programma met process id " + str(my_pid) )
 
+    parser = argparse.ArgumentParser(description='help informatie')
+    parser.add_argument( '-r', '--recovery', required=False, action="store_true" )
+    args = parser.parse_args()
+
+    if args.recovery == True:
+        # find backup files of previous tries 
+        for name in glob.glob( const.DIR_FILEDISK  + "/*.db_conversion_backup*" ):
+            try:
+                shutil.copy2( name, const.FILE_DB_WATERMETER )
+                flog.info( inspect.stack()[0][3] + ": bestand " + const.FILE_DB_WATERMETER + " gemaakt van backup " +  name )
+                break
+            except Exception as e:
+                flog.error( inspect.stack()[0][3] + ": " + name + " was niet te kopieren, gestopt -> " + str(e.args) )
+                sys.exit(1)
+    
     if os.path.isfile( const.FILE_DB_WATERMETER ):
         flog.info( inspect.stack()[0][3] + ": oude versie van database bestaat, start van verwerking." )
     else:
         flog.info( inspect.stack()[0][3] + ": oude versie van database bestand " +  const.FILE_DB_WATERMETER + " bestaat niet, niets te converteren. Gestopt!" )
         sys.exit(0)
 
-     # open watermeter V1 databases
-    try:    
-        V1_watermeter_db.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
+    # make a backup to data as save guard
+    # from ram  
+    try:
+        filename = diskPathByFilename( const.FILE_DB_WATERMETER )
+        target_file_name = filename + "_conversion_backup." + mkLocalTimestamp()
+        shutil.copy2( const.FILE_DB_WATERMETER,  target_file_name )
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": " + target_file_name + " was niet te maken, gestopt. -> " + str(e.args) )
+        sys.exit(1)
+    flog.info( inspect.stack()[0][3] + ": database bestand "  + target_file_name + " gemaakt." )
+
+   
+    # open van watermeter databases (oud nodig voor import.)
+    try:
+        watermeter_db_uur.init( const.FILE_DB_WATERMETER, const.DB_WATERMETER_UUR_TAB, flog )
     except Exception as e:
         flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
         sys.exit(1)
     flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_UUR_TAB + " succesvol geopend." )
 
-    # open watermeter V2 database 
+    try:
+        watermeter_db_dag.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_DAG_TAB , flog )
+    except Exception as e:
+        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
+        sys.exit(1)
+    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_DAG_TAB + " succesvol geopend." )
+
     try:    
+        watermeter_db_maand.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_MAAND_TAB ,flog )
+    except Exception as e:
+        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
+        sys.exit(1)
+    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_MAAND_TAB + " succesvol geopend." )
+
+    try:    
+        watermeter_db_jaar.init( const.FILE_DB_WATERMETER ,const.DB_WATERMETER_JAAR_TAB, flog )
+    except Exception as e:
+        flog.critical(inspect.stack()[0][3]+": Database niet te openen(1)." + const.FILE_DB_WATERMETER + ") melding:"+str(e.args[0]))
+        sys.exit(1)
+    flog.info(inspect.stack()[0][3]+": database tabel " + const.DB_WATERMETER_JAAR_TAB  + " succesvol geopend." )
+
+
+    # open watermeter V2 database 
+    try:
         V2_watermeter_db.init( const.FILE_DB_WATERMETERV2, const.DB_WATERMETERV2_TAB, flog )
     except Exception as e:
         flog.critical( inspect.stack()[0][3] + ": Database niet te openen(3)." + const.FILE_DB_WATERMETERV2 + " melding:" + str(e.args[0]) )
@@ -49,6 +105,7 @@ def Main(argv):
 
     flog.info( inspect.stack()[0][3] + ": wissen van records die verouderd zijn." )
 
+    """
     #do db cleanup 
     timestamp = mkLocalTimeString()
     try:
@@ -58,7 +115,7 @@ def Main(argv):
         V1_watermeter_db.del_rec( sql_del_str )     
     except Exception as e:
         flog.warning (inspect.stack()[0][3]+": wissen van oude uren records gefaald: " + str(e) )
-
+    """
 
     total_records_processed = 0
    
@@ -104,21 +161,23 @@ def renameV1Databases():
         flog.warning( inspect.stack()[0][3] + ": " + const.FILE_DB_WATERMETER + " was niet te hernoemen -> " + str(e.args) )
     flog.info( inspect.stack()[0][3] + ": database bestand "  + const.FILE_DB_WATERMETER + " hernoemd naar " + const.FILE_DB_WATERMETER + ".imported" )
 
-    filename =  diskPathByFilename(const.FILE_DB_WATERMETER) 
+    filename = diskPathByFilename( const.FILE_DB_WATERMETER ) 
     try:
         if os.path.isfile( filename ):
+            print( filename )
             os.rename( filename, filename + ".imported" )
     except Exception as e:
-        flog.warning( inspect.stack()[0][3] + ": " + filename + " was iet te hernoemen -> " + str(e.args) )
+        flog.warning( inspect.stack()[0][3] + ": " + filename + " was niet te hernoemen -> " + str(e.args) )
     flog.info( inspect.stack()[0][3] + ": database bestand "  + filename + " hernoemd naar " + filename + ".imported" )
-
+    
 
 def selectAndInsertRecord( tablename , timeperiod_id ):
     records_added = 0
     rec_values = sqldb.WATERMETER_REC
     try:
         sql = "select TIMESTAMP, PULS_PER_TIMEUNIT, VERBR_PER_TIMEUNIT, VERBR_IN_M3_TOTAAL from " + tablename
-        records = V1_watermeter_db.select_rec( sql )
+        # use of watermeter_db_uur for all tabels is ok.
+        records = watermeter_db_uur.select_rec( sql )
         for record in records:
             #print ( record[0] )
             rec_values['TIMESTAMP']             = record[0]
@@ -132,7 +191,10 @@ def selectAndInsertRecord( tablename , timeperiod_id ):
         flog.warning (inspect.stack()[0][3]+": select gefaald: " + str(_e) )
     return records_added
 
-
+def mkLocalTimestamp(): 
+    t=time.localtime()
+    return "%04d%02d%02d%02d%02d%02d"\
+    % (t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec)    
 
 def saveExit(signum, frame):
     flog.info(inspect.stack()[0][3]+" SIGINT ontvangen, gestopt.")

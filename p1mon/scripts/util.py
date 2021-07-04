@@ -21,8 +21,8 @@ from pwd import getpwnam
 
 # the number of seconds from 1970-01-01
 def getUtcTime():
-	now = datetime.utcnow()
-	return int((now - datetime(1970, 1, 1)).total_seconds())
+    now = datetime.utcnow()
+    return int((now - datetime(1970, 1, 1)).total_seconds())
 
 def restart_program():
     """Restarts the current program, with file objects and descriptors

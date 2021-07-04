@@ -33,12 +33,14 @@ if ( isset($_POST["upgrade_button"]) ) {
     $showStatusOutput = 1;
 }
 
-
 if ( isset($_POST["import"]) ) { 
     
-            if ( strlen($_POST["import"])  > 1 ) { // we have a file, now check it
+            if ( strlen($_POST["import"]) > 1 ) { // we have a file, now check it
                 
                     #echo ("$showStatusOutput=".$showStatusOutput);
+
+                    #remove old status file 
+                    unlink('/p1mon/mnt/ramdisk/sqlimport.status');
 
                     $file_tmp = '/p1mon/var/tmp/'.$_POST["import"];
                     $info = pathinfo($file_tmp);
@@ -48,26 +50,22 @@ if ( isset($_POST["import"]) ) {
                     #echo($file_name);
 
                     $date = date_create();
-                    #$sqlImportFilename = '/p1mon/var/tmp/import-' . date_timestamp_get($date) . '-' . basename($file_tmp,'.'.$info['extension']) . ".zip";
-                    $sqlImportFilename = '/p1mon/var/tmp/import-' . date_timestamp_get($date) . strval(mt_rand (100,999)) . ".zip";
-                    //echo $sqlImportFilename;
+                    $random_number_str =  date_timestamp_get($date) . strval(mt_rand (100,999));
+                    $sqlImportFilename = '/p1mon/var/tmp/import-' . $random_number_str . ".zip";
+                    #echo $sqlImportFilename;
                     
-                    setcookie("sqlImportFilename", basename($sqlImportFilename), time()+3900); // hour + 5 min.
-                  
-                    rename($file_tmp, $sqlImportFilename);
-                    chmod($sqlImportFilename, 0777);
-                    chgrp($sqlImportFilename,'p1mon');
-                    //chown($sqlImportFilename,'p1mon');
-                    #echo($sqlImportFilename);
-                    $command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1SqlImport.py -i $sqlImportFilename' > /dev/null &";
-                    #echo $command;
-                    exec($command ,$arr_execoutput, $exec_ret_value );
-                    if ( isset( $_POST["importdir"] ) ){
-                        rmdir( '/p1mon/var/tmp/'.trim($_POST["importdir"]) );
-                    }
-                    
+                    # shows the dialog
+                    setcookie("sqlImportIsActive", basename($sqlImportFilename), time()+1200); //20 min 
 
-            }     
+                    rename( $file_tmp, $sqlImportFilename );
+                    chmod( $sqlImportFilename, 0770 );
+                    chgrp( $sqlImportFilename,'p1mon' );
+                    rmdir( '/p1mon/var/tmp/'.trim($_POST["importdir"]) );
+
+                    updateConfigDb("update config set parameter = '". $sqlImportFilename . "' where ID = 138");
+                    updateConfigDb("update config set parameter = '" . $random_number_str . "' where ID = 137");
+
+            }
 }
 
 ?>
@@ -103,18 +101,15 @@ if ( isset($_POST["import"]) ) {
 </script>
 </head>
 <body>
-  <div class="top-wrapper">
-            <div class="content-wrapper">
-                 <?php page_header();?>
-            </div>
-        </div>
+
+    <?php page_header();?>
         
-        <div class="top-wrapper-2">
-            <div class="content-wrapper pad-13">
+    <div class="top-wrapper-2">
+        <div class="content-wrapper pad-13">
                 <!-- header 2 -->
-                <?php pageclock(); ?>
-            </div>
-             <?php config_buttons(1);?>
+            <?php pageclock(); ?>
+        </div>
+            <?php config_buttons(1);?>
         </div> <!-- end top wrapper-2 -->
         
         <div class="mid-section">
@@ -183,7 +178,7 @@ if ( isset($_POST["import"]) ) {
                             </div>
                             <div class="frame-4-bot text-10">
                                 <?php echo strIdx(7);?>
-                                </br></br>
+                                <br><br>
                                 <?php echo strIdx( 37 );?>
                             </div>
                         </div>
@@ -202,42 +197,29 @@ if ( isset($_POST["import"]) ) {
     <div id="sql_export_dl_link" ><br><a id='sql_export_dl_href' href="">Als de download niet start klik dan hier</a></div>
 </div>    
 
-<div id="import_sql_msg">
+
+<div id="import_sql_message"> <!-- new  version 1.2.0 -->
      <div class='close_button' id="import_sql_msg_close">
         <i class="color-select fas fa-times-circle fa-2x" aria-hidden="true"></i>
     </div>
-    <i class="fas fa-fw fa-1x fa-download">&nbsp;&nbsp;</i>SQL gegevens importeren&nbsp;
-    <i id="sql_import_spinner" class="fas fa-spinner fa-pulse fa-1x fa-fw"></i>
-    <div>
-        <div style="display: inline-block;">Export datum:&nbsp;</div><div style="display: inline-block;" id="sql_import_export_timestamp"></div>
+    <div id="scroll_window" class="text-29" >
+        Even geduld aub.
     </div>
-    <div>
-        <div style="display: inline-block;">Precentage records verwerkt:&nbsp;</div><div style="display: inline-block;" id="sql_import_export_total_records"></div>
-    </div>
-    <div>
-        <div style="display: inline-block;" id="sql_import_lines_processed">0</div><div style="display: inline-block;">&nbsp;records goed verwerkt</div>
-    </div>
-     <div id="sql_import_lines_nok_processed_container" style="display: none;">
-        <div class="color-error" style="display: inline-block;" id="sql_import_lines_nok_processed">0</div><div class="color-error" style="display: inline-block;">&nbsp;defecte records gevonden.</div>
-    </div>
-    
-     <div id="sql_import_done" class="display-none" >Import gereed.</div>
-    
 </div> 
+
 
 <div id="upgrade_status" class="pos-45" style="display: none" >
     <div class='close_button-2' id="assist_logging_close">
-        <i class="color-select fas fa-times-circle" data-fa-transform="grow-6"" aria-hidden="true"></i>
+        <i class="color-select fas fa-times-circle" data-fa-transform="grow-6" aria-hidden="true"></i>
     </div>
     <div class="frame-4-top">
         <span class="text-15">Upgrade logging</span>
             </div>
                 <div class="frame-4-bot">
-                    <div id="counter_reset_logging" class="text-9">
+                    <div id="upgrade_assist_logging" class="text-9">
 
                     </div>
                 </div>
-        </div>
 </div>
 
 <script>    
@@ -245,14 +227,17 @@ var sqlImportFilename = '';
 var sqlExportChecking = false;
 var initloadtimer;
 
-sqlImportFilename=getCookie("sqlImportFilename"); 
+sqlImportIsActive=getCookie("sqlImportIsActive"); 
 
 $(function() {
+    centerPosition('#import_sql_message');
     centerPosition('#export_sql_msg');
-    centerPosition('#import_sql_msg');
     centerPosition('#upgrade_status');
     hideStuff('sql_export_dl_link');
-    LoadData();     
+    LoadData(); 
+    if (sqlImportIsActive !== undefined) {
+        showStuff('import_sql_message');
+    }
 });
 
 
@@ -269,9 +254,9 @@ $('#export_sql_msg_close').click(function() {
 }); 
 
 $('#import_sql_msg_close').click(function() {    
-   hideStuff('import_sql_msg');
-   sqlImportFilename = undefined;
-   document.cookie = "sqlImportFilename=''; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+   hideStuff('import_sql_message');
+   sqlImportIsActive = undefined;
+   document.cookie = "sqlImportIsActive=''; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }); 
 
 $('#assist_logging_close').click(function() {    
@@ -279,7 +264,7 @@ $('#assist_logging_close').click(function() {
 }); 
 
 function LoadData() {
-    //console.log('LoadData');
+    
     clearTimeout(initloadtimer);
     
     readCounterResetLogging();
@@ -287,13 +272,12 @@ function LoadData() {
     if (sqlExportChecking === true)
         startSqlExport(exportID,'GETSTATUS'); 
     
-    if (sqlImportFilename !== undefined)
-        if (sqlImportFilename.length > 0) {
-            readJsonImportStatus(sqlImportFilename+".status");
+    if (sqlImportIsActive !== undefined ) {
+        readSqlImportStatusLogging();
+    }
 
-            showStuff('import_sql_msg');
-        }
-    initloadtimer = setInterval(function(){LoadData();}, 500);
+    initloadtimer = setInterval(function(){LoadData();}, 1000);
+
 } 
 
 function getCookie(name) {
@@ -354,56 +338,37 @@ function startSqlExport(exp_id, command){
     });
 }
 
-function readJsonImportStatus(fileid){ 
-    $.getJSON( "./json/sql-import-status.php?fileid="+fileid, function( d ) {
-        try {
-            $('#sql_import_lines_processed').html(d['records_processed_ok'])
-            
-            // only show when there are error records.
-            if (d['records_processed_nok'] > 0 ) {
-                showStuff('sql_import_lines_nok_processed_container')
-                $('#sql_import_lines_nok_processed').html(d['records_processed_nok'])
-            } 
-            if ( d['export_timestamp'] !== 0 ) { 
-                $('#sql_import_export_timestamp').html(d['export_timestamp']);
-            } else {
-                $('#sql_import_export_timestamp').html('onbekend');
-            }
 
-            if ( d['records_total'] !== 0 ) { 
-                // calc percentage done
-                $('#sql_import_export_total_records').html( ( ((d['records_processed_ok'] + d['records_processed_nok'] ) / d['records_total'] ) * 100).toFixed(1) +"%" );
-            } else {
-                $('#sql_import_export_total_records').html('onbekend');
-            }
+function readSqlImportStatusLogging(){ 
+    $.get( "/txt/txt-sql-import-status.php", function( response, status, xhr ) {
+        
+        if ( status == "error" ) {
+            $("#scroll_window").html('SQL import log data niet beschikbaar.');
+        }
+        
+        if ( response.length > 0 ) {
+            //console.log("update =" + response.length )
+            $('#scroll_window').html( response );
+            // keep scroll window scrolled down.
+            $('#scroll_window').scrollTop($('#scroll_window')[0].scrollHeight);
+        } else {
+            $('#scroll_window').html( "<b>Even geduld aub, gegevens worden verwerkt.</b><br>" );
+        }
 
-            if ( d['status_text'] === 'klaar' ) {
-                $('#sql_import_spinner').removeClass("fa-pulse");
-                document.cookie = "sqlImportFilename=''; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                showStuff('import_sql_msg_close'); 
-                showStuff('sql_import_done');
-                 setTimeout(function(){
-                    sqlImportFilename = undefined;
-                    hideStuff('import_sql_msg');
-                },5000); 
-            } 
-         } catch(err) {    
-            return null;
-         }    
     });
-};
+}
 
 
 function readCounterResetLogging(){ 
 
    $.get( "/txt/txt-upgrade-status.php", function( response, status, xhr ) {
         if ( status == "error" ) {
-            $("#counter_reset_logging").html('Upgrade data niet beschikbaar.');
+            $("#upgrade_assist_logging").html('Upgrade data niet beschikbaar.');
         }
         if ( response.length > 0 ) {
-            $('#counter_reset_logging').html( response );
+            $('#upgrade_assist_logging').html( response );
         } else {
-            $('#counter_reset_logging').html( "<b>Even geduld aub, gegevens worden verwerkt.</b><br>" );
+            $('#upgrade_assist_logging').html( "<b>Even geduld aub, gegevens worden verwerkt.</b><br>" );
         }
     }); 
 }

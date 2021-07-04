@@ -338,11 +338,8 @@ $(function() {
 </script>
 </head>
 <body>
-<div class="top-wrapper">
-    <div class="content-wrapper">   
-        <?php page_header();?>     
-    </div>
-</div>
+
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">

@@ -18,9 +18,9 @@ from multiprocessing import Process, Queue
 from threading import Timer
 from datetime import datetime, timedelta, timezone
 from logger import fileLogger,logging
-from sqldb import configDB, rtStatusDb, WatermeterDB, powerProductionDB
+from sqldb import configDB, rtStatusDb, powerProductionDB
 from time import sleep
-from util import fileExist,setFile2user,fileChanged, getUtcTime, mkLocalTimeString
+from util import fileExist,setFile2user, mkLocalTimeString
 from gpio import gpioDigtalInput
 from random import randrange
 from utiltimestamp import utiltimestamp
@@ -101,7 +101,7 @@ def Main(argv):
 
         _id, run_status, _label = config_db.strget( 125, flog )
         if int(run_status) == 0: # stop process
-            flog.info(inspect.stack()[0][3]+": programma is niet als actief geconfigureerd, prgramma wordt gestopt.")
+            flog.info(inspect.stack()[0][3]+": programma is niet als actief geconfigureerd, programma wordt gestopt.")
             stop()
 
         #flog.debug( inspect.stack()[0][3]+": loop " )
@@ -485,8 +485,6 @@ def minuteProcessing( timestamp, tariff, puls_value_per_kwh ):
     rec_values['POWER_SOURCE_ID']       = S0_POWERSOURCE
     rec_values['PRODUCTION_KWH_TOTAL']  = 0
     rec_values['PRODUCTION_PSEUDO_KW']  = 0
-
-    
 
     if ( tariff == 'P' ):
         rec_values['PRODUCTION_KWH_HIGH']       = float(puls_value_per_kwh)

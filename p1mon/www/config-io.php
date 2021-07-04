@@ -32,7 +32,7 @@ $time_slot_1 = array( '', '', '', '', '' ,'' , '', '', '', '', '' );
 $time_slot_2 = array( '', '', '', '', '' ,'' , '', '', '', '', '' );
 
 function makeSelectortGPIO( $id ) {
-	$configValue = config_read($id);
+    $configValue = config_read($id);
     for ( $i=2; $i<28; $i++ ) {
         if ( $configValue == $i ) {
             $selected = 'selected="selected"';
@@ -163,39 +163,39 @@ if ( isset( $_POST['fs_rb_weekday_zo_2'] ) ) {
 } 
 
 if ( isset( $_POST["fs_rb_powerswitcher"] ) ) { 
-	if ( $err_cnt == -1 ) $err_cnt=0;
-	if ( $_POST[ "fs_rb_powerswitcher" ] == '1' ) {
-		if ( updateConfigDb("update config set parameter = '1' where ID = 86") ) $err_cnt += 1;
-	} else {
-		if ( updateConfigDb("update config set parameter = '0' where ID = 86") ) $err_cnt += 1;
-	}
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ( $_POST[ "fs_rb_powerswitcher" ] == '1' ) {
+        if ( updateConfigDb("update config set parameter = '1' where ID = 86") ) $err_cnt += 1;
+    } else {
+        if ( updateConfigDb("update config set parameter = '0' where ID = 86") ) $err_cnt += 1;
+    }
 }
 
 if ( isset( $_POST["fs_rb_tarifpowerswitcher"] ) ) { 
-	if ( $err_cnt == -1 ) $err_cnt=0;
-	if ( $_POST[ "fs_rb_tarifpowerswitcher" ] == '1' ) {
-		if ( updateConfigDb("update config set parameter = '1' where ID = 90") ) $err_cnt += 1;
-	} else {
-		if ( updateConfigDb("update config set parameter = '0' where ID = 90") ) $err_cnt += 1;
-	}
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ( $_POST[ "fs_rb_tarifpowerswitcher" ] == '1' ) {
+        if ( updateConfigDb("update config set parameter = '1' where ID = 90") ) $err_cnt += 1;
+    } else {
+        if ( updateConfigDb("update config set parameter = '0' where ID = 90") ) $err_cnt += 1;
+    }
 }
 
 if ( isset( $_POST["fs_rb_powerswitcher_forced"] ) ) { 
-	if ( $err_cnt == -1 ) $err_cnt=0;
-	if ( $_POST[ "fs_rb_powerswitcher_forced" ] == '1' ) {
-		if ( updateConfigDb("update config set parameter = '1' where ID = 87") ) $err_cnt += 1;
-	} else {
-		if ( updateConfigDb("update config set parameter = '0' where ID = 87") ) $err_cnt += 1;
-	}
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ( $_POST[ "fs_rb_powerswitcher_forced" ] == '1' ) {
+        if ( updateConfigDb("update config set parameter = '1' where ID = 87") ) $err_cnt += 1;
+    } else {
+        if ( updateConfigDb("update config set parameter = '0' where ID = 87") ) $err_cnt += 1;
+    }
 }
 
 if ( isset( $_POST["fs_rb_tarifpowerswitcher_forced"] ) ) { 
-	if ( $err_cnt == -1 ) $err_cnt=0;
-	if ( $_POST[ "fs_rb_tarifpowerswitcher_forced" ] == '1' ) {
-		if ( updateConfigDb("update config set parameter = '1' where ID = 92") ) $err_cnt += 1;
-	} else {
-		if ( updateConfigDb("update config set parameter = '0' where ID = 92") ) $err_cnt += 1;
-	}
+    if ( $err_cnt == -1 ) $err_cnt=0;
+    if ( $_POST[ "fs_rb_tarifpowerswitcher_forced" ] == '1' ) {
+        if ( updateConfigDb("update config set parameter = '1' where ID = 92") ) $err_cnt += 1;
+    } else {
+        if ( updateConfigDb("update config set parameter = '0' where ID = 92") ) $err_cnt += 1;
+    }
 }
 
 if( isset($_POST["gpio_list"]) ) {
@@ -317,63 +317,58 @@ function readJsonApiStatus(){
 
 function LoadData() {
     clearTimeout(initloadtimer);
-    //readJsonDataStatus();
     readJsonApiStatus();
-   // readJsonApiWaterHistoryDay( 1 );
     initloadtimer = setInterval( function(){ LoadData(); }, 1000 );
 }
 
 $(function () {
-	LoadData();
+    LoadData();
 });
 
 </script>
-  <div class="top-wrapper">
-            <div class="content-wrapper">
-                 <?php page_header();?>
-            </div>
-        </div>
-		
+
+        <?php page_header();?>
+
         <div class="top-wrapper-2">
             <div class="content-wrapper pad-13">
                 <!-- header 2 -->
                <?php pageclock(); ?>
             </div>
-			 <?php config_buttons(0);?>
+             <?php config_buttons(0);?>
         </div> <!-- end top wrapper-2 -->
-		
-		<div class="mid-section">
-			<div class="left-wrapper-config"> <!-- left block -->
-				<?php menu_control( 13 );?>
-			</div>
-			
-			<div id="right-wrapper-config"> <!-- right block -->
-			<!-- inner block right part of screen -->
-				<div id="right-wrapper-config-left-4">
-					<!-- start of content -->
-					<form name="formvalues" id="formvalues" method="POST">
+        
+        <div class="mid-section">
+            <div class="left-wrapper-config"> <!-- left block -->
+                <?php menu_control( 13 );?>
+            </div>
+            
+            <div id="right-wrapper-config"> <!-- right block -->
+            <!-- inner block right part of screen -->
+                <div id="right-wrapper-config-left-4">
+                    <!-- start of content -->
+                    <form name="formvalues" id="formvalues" method="POST">
                         
-						<div class="frame-4-top">
-							<span class="text-15">teruglevering schakelaar</span>
-						</div>
-						<div class="frame-4-bot">
-							<div class="float-left">
-								<i class="text-10 pad-7 fas fa-bolt"></i>
-								<label class="text-10">gemiddelde grenswaarde vermogen inschakelen</label>
-								<p class="p-1"></p>
-								<i class="text-10 pad-27 fas fa-bolt"></i>
-								<label class="text-10">gemiddelde grenswaarde vermogen uitschakelen</label> 
-								<p class="p-1"></p>
-								<i class="text-10 pad-27 far fa-clock"></i>
-								<label class="text-10">gemiddelde tijd inschakelen (min.)</label> 
-								<p class="p-1"></p>
-								<i class="text-10 pad-27 far fa-clock"></i>
+                        <div class="frame-4-top">
+                            <span class="text-15">teruglevering schakelaar</span>
+                        </div>
+                        <div class="frame-4-bot">
+                            <div class="float-left">
+                                <i class="text-10 pad-7 fas fa-bolt"></i>
+                                <label class="text-10">gemiddelde grenswaarde vermogen inschakelen</label>
+                                <p class="p-1"></p>
+                                <i class="text-10 pad-27 fas fa-bolt"></i>
+                                <label class="text-10">gemiddelde grenswaarde vermogen uitschakelen</label> 
+                                <p class="p-1"></p>
+                                <i class="text-10 pad-27 far fa-clock"></i>
+                                <label class="text-10">gemiddelde tijd inschakelen (min.)</label> 
+                                <p class="p-1"></p>
+                                <i class="text-10 pad-27 far fa-clock"></i>
                                 <label class="text-10">gemiddelde tijd uitschakelen (min.)</label> 
                                 <p class="p-1"></p>
                                 <i class="text-10 pad-27 far fa-clock"></i>
-								<label class="text-10">minimale tijd ingeschakeld (min.)</label> 
-								<p class="p-1"></p>
-								<i class="text-10 pad-27 far fa-clock"></i>
+                                <label class="text-10">minimale tijd ingeschakeld (min.)</label> 
+                                <p class="p-1"></p>
+                                <i class="text-10 pad-27 far fa-clock"></i>
                                 <label class="text-10">minimale tijd uitgeschakeld (min.)</label> 
                                 <p class="p-1"></p>
                                 <i class="text-10 pad-27 fas fa-map-pin"></i>
@@ -388,41 +383,41 @@ $(function () {
                                 <br>
                                 <div class="text-10">Huidige schakel vermogen in Watt (0 is uit):&nbsp;<span id="powerswitcher_power"></span></div>
                                 <div class="text-10">Laatste schakel actie:&nbsp; <span id="powerswitcher_timestamp"></span></div>
-							</div>
-							<div class="float-right pad-1">
+                            </div>
+                            <div class="float-right pad-1">
                                 <input class="input-1 color-settings  color-input-back" id="watt_on" name="watt_on" type="text" value="<?php echo config_read(81);?>">
-								<p class="p-1"></p>
-								<input class="input-1 color-settings  color-input-back" id="watt_off" name="watt_off" type="text" value="<?php echo config_read(82);?>">
-								<p class="p-1"></p>
+                                <p class="p-1"></p>
+                                <input class="input-1 color-settings  color-input-back" id="watt_off" name="watt_off" type="text" value="<?php echo config_read(82);?>">
+                                <p class="p-1"></p>
                                 <input class="input-1 color-settings  color-input-back" id="min_on" name="min_on" type="text" value="<?php echo config_read(83);?>">
-								<p class="p-1"></p>
+                                <p class="p-1"></p>
                                 <input class="input-1 color-settings  color-input-back" id="min_off" name="min_off" type="text" value="<?php echo config_read(84);?>">
                                 <p class="p-1"></p>
                                 <input class="input-1 color-settings  color-input-back" id="min_on_minimal" name="min_on_minimal" type="text" value="<?php echo config_read(88);?>">
-								<p class="p-1"></p>
+                                <p class="p-1"></p>
                                 <input class="input-1 color-settings  color-input-back" id="min_off_minimal" name="min_off_minimal" type="text" value="<?php echo config_read(89);?>">
                                 <p class="p-1"></p>
                                 <select class="select-1 color-select color-input-back cursor-pointer" name="gpio_list" id="gpio_list">
-									<?php makeSelectortGPIO(85) ;?>
-								</select>
+                                    <?php makeSelectortGPIO(85) ;?>
+                                </select>
                                 <p class="p-1"></p>
                                 <div class='pad-28'>
-									<input class="cursor-pointer" id="fs_rb_powerswitcher_on"  name="fs_rb_powerswitcher" type="radio" value="1" <?php if ( config_read(86) == 1 ) { echo 'checked'; }?>>Aan
-									<input class="cursor-pointer" id="fs_rb_powerswitcher_off" name="fs_rb_powerswitcher" type="radio" value="0" <?php if ( config_read(86) == 0 ) { echo 'checked'; }?>>Uit
+                                    <input class="cursor-pointer" id="fs_rb_powerswitcher_on"  name="fs_rb_powerswitcher" type="radio" value="1" <?php if ( config_read(86) == 1 ) { echo 'checked'; }?>>Aan
+                                    <input class="cursor-pointer" id="fs_rb_powerswitcher_off" name="fs_rb_powerswitcher" type="radio" value="0" <?php if ( config_read(86) == 0 ) { echo 'checked'; }?>>Uit
                                 </div>
                                 <p class="p-1"></p>
                                 <div class='pad-28'>
-									<input class="cursor-pointer" id="fs_rb_powerswitcher_forced_on"  name="fs_rb_powerswitcher_forced" type="radio" value="1" <?php if ( config_read(87) == 1 ) { echo 'checked'; }?>>Aan
-									<input class="cursor-pointer" id="fs_rb_powerswitcher_forced_off" name="fs_rb_powerswitcher_forced" type="radio" value="0" <?php if ( config_read(87) == 0 ) { echo 'checked'; }?>>Uit
-								</div>
+                                    <input class="cursor-pointer" id="fs_rb_powerswitcher_forced_on"  name="fs_rb_powerswitcher_forced" type="radio" value="1" <?php if ( config_read(87) == 1 ) { echo 'checked'; }?>>Aan
+                                    <input class="cursor-pointer" id="fs_rb_powerswitcher_forced_off" name="fs_rb_powerswitcher_forced" type="radio" value="0" <?php if ( config_read(87) == 0 ) { echo 'checked'; }?>>Uit
+                                </div>
                             </div>
-						</div>
+                        </div>
                         <p></p>
                        
                         <div class="frame-4-top">
-							<span class="text-15">tariefschakelaar</span>
-						</div>
-						<div class="frame-4-bot">
+                            <span class="text-15">tariefschakelaar</span>
+                        </div>
+                        <div class="frame-4-bot">
                             <div>
                             <i class="text-10 pad-25 far fa-clock"></i>
                                 <label class="text-10">Tijdsperiodes voor de schakeling</label>
@@ -489,7 +484,7 @@ $(function () {
                                 <input class="cursor-pointer margin-6" id="fs_rb_weekday_zo_2" name="fs_rb_weekday_zo_2" type="checkbox" value="on" <?php if ( $time_slot_2[10] == 1 ) { echo 'checked'; }?>>
                                 <label for="fs_rb_weekday_zo_2" class="text-27 margin-5">zo</label>
                             </div>
-							<div class="float-left">
+                            <div class="float-left">
                                 <p class="p-1"></p>
                                 <i class="text-10 pad-25 fas fa-toggle-off"></i>
                                 <label class="text-10">Schakelen op piek of dal tarief</label> 
@@ -505,49 +500,49 @@ $(function () {
                                 <p class="p-1"></p>
                                 <div class="text-10 pad-7" >Huidig status is :&nbsp;<span id="tarifswitcher_status">onbekend</span></div>
                                 <div class="text-10" >laatste schakel actie:&nbsp;<span id="tarifswitcher_timestamp"></span></div>
-							</div>
-							<div class="float-right pad-1">
+                            </div>
+                            <div class="float-right pad-1">
                                 <div class='pad-31'>
-									<input class="cursor-pointer" id="fs_rb_tarif_mode_piek" name="fs_rb_tarif_mode" type="radio" value="1" <?php if ( config_read(91) == 'P' ) { echo 'checked'; }?>>Piek
-									<input class="cursor-pointer" id="fs_rb_tarif_mode_dal"  name="fs_rb_tarif_mode" type="radio" value="0" <?php if ( config_read(91) == 'D' ) { echo 'checked'; }?>>Dal
+                                    <input class="cursor-pointer" id="fs_rb_tarif_mode_piek" name="fs_rb_tarif_mode" type="radio" value="1" <?php if ( config_read(91) == 'P' ) { echo 'checked'; }?>>Piek
+                                    <input class="cursor-pointer" id="fs_rb_tarif_mode_dal"  name="fs_rb_tarif_mode" type="radio" value="0" <?php if ( config_read(91) == 'D' ) { echo 'checked'; }?>>Dal
                                 </div>
                                 <p class="p-1"></p>
                                 <select class="select-1 color-select color-input-back cursor-pointer" name="gpio_list_tarif" id="gpio_list_tarif">
-									<?php makeSelectortGPIO(95) ;?>
-								</select>
+                                    <?php makeSelectortGPIO(95) ;?>
+                                </select>
                                 <p class="p-1"></p>
                                 <div class=''>
-									<input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_on"  name="fs_rb_tarifpowerswitcher" type="radio" value="1" <?php if ( config_read(90) == 1 ) { echo 'checked'; }?>>Aan
-									<input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_off" name="fs_rb_tarifpowerswitcher" type="radio" value="0" <?php if ( config_read(90) == 0 ) { echo 'checked'; }?>>Uit
+                                    <input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_on"  name="fs_rb_tarifpowerswitcher" type="radio" value="1" <?php if ( config_read(90) == 1 ) { echo 'checked'; }?>>Aan
+                                    <input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_off" name="fs_rb_tarifpowerswitcher" type="radio" value="0" <?php if ( config_read(90) == 0 ) { echo 'checked'; }?>>Uit
                                 </div>
                                 <p class="p-1"></p>
                                 <div class='pad-25'>
-									<input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_forced_on"  name="fs_rb_tarifpowerswitcher_forced" type="radio" value="1" <?php if ( config_read(92) == 1 ) { echo 'checked'; }?>>Aan
-									<input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_forced_off" name="fs_rb_tarifpowerswitcher_forced" type="radio" value="0" <?php if ( config_read(92) == 0 ) { echo 'checked'; }?>>Uit
-								</div>
+                                    <input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_forced_on"  name="fs_rb_tarifpowerswitcher_forced" type="radio" value="1" <?php if ( config_read(92) == 1 ) { echo 'checked'; }?>>Aan
+                                    <input class="cursor-pointer" id="fs_rb_tarifpowerswitcher_forced_off" name="fs_rb_tarifpowerswitcher_forced" type="radio" value="0" <?php if ( config_read(92) == 0 ) { echo 'checked'; }?>>Uit
+                                </div>
                             </div>
-						</div>
+                        </div>
                         <p></p>
 
 
-						<!-- placeholder variables for session termination -->
-						<input type="hidden" name="logout" id="logout" value="">
-					</form>
-				</div>
-				
-				<div id="right-wrapper-config-right-4">
-					<div class="frame-4-top">
-						<span class="text-15">hulp</span>
-					</div>
-					<div class="frame-4-bot text-10">	
+                        <!-- placeholder variables for session termination -->
+                        <input type="hidden" name="logout" id="logout" value="">
+                    </form>
+                </div>
+                
+                <div id="right-wrapper-config-right-4">
+                    <div class="frame-4-top">
+                        <span class="text-15">hulp</span>
+                    </div>
+                    <div class="frame-4-bot text-10">    
                         <?php echo strIdx(70);?>
                         <br><br>
                         <?php echo strIdx(72);?>
                         <img class="pos-1" alt="PI GPIO pin layout" src="./img/pin_layout.svg">
-					</div>
-				</div>
-			</div>	
-			<!-- end inner block right part of screen -->
+                    </div>
+                </div>
+            </div>    
+            <!-- end inner block right part of screen -->
     </div>
     <script>
 
@@ -565,14 +560,14 @@ jQuery.validator.addMethod("ztatz_time_format", function(value, element) {
     };
 }, '');
 
-jQuery.validator.addMethod("ztatz_gpio", function(value, element) {
-        if ( document.getElementById("gpio_list_watermeter").value   == document.getElementById("gpio_list_tarif").value ) {
-            document.getElementById("gpio_list_tarif").style.borderColor = "red";
-            document.getElementById("gpio_list_watermeter").style.borderColor = "red";
+jQuery.validator.addMethod( "ztatz_gpio", function(value, element) {
+
+        if ( document.getElementById ("gpio_list_tarif" ).value == document.getElementById("gpio_list").value ) {
+            document.getElementById( "gpio_list_tarif" ).style.borderColor = "red";
+            document.getElementById( "gpio_list" ).style.borderColor       = "red";
             return false;
         }   
-        document.getElementById("gpio_list").style.borderColor = "#a6a6a6";
-        document.getElementById("gpio_list_watermeter").style.borderColor = "#a6a6a6";
+        document.getElementById("gpio_list").style.borderColor       = "#a6a6a6";
         document.getElementById("gpio_list_tarif").style.borderColor = "#a6a6a6";
         return true;
 }, '');
@@ -679,7 +674,7 @@ $(function() {
             //console.log ( errors );
           },
         errorPlacement: function(error, element) {
-        	$(this).addClass('error');
+            $(this).addClass('error');
             //console.log ( 'errorPlacement' );
             return false;  // will suppress error messages    
         }

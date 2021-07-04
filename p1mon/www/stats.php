@@ -28,33 +28,41 @@ if ( checkDisplayIsActive(19) == false) { return; }
 <script src="./js/p1mon-util.js"></script>
 
 <script>
-//var seriesOptions   = [];
-var recordsLoaded   = 0;
+var recordsLoaded            = 0;
 var initloadtimer;
-var mins            = 1;  
-var secs            = mins * 60;
-var currentSeconds  = 0;
-var currentMinutes  = 0;
-var Gselected       = 0;
-var GselectText = ['15 min','30 min','1 uur','8 uur','12 uur','24 uur']; // #PARAMETER
-var GseriesVisibilty= [true,true];
-var GverbrData      = [];
-var GgelvrData      = [];
-var maxrecords      = 1442;
+var mins                     = 1;  
+var secs                     = mins * 60;
+var currentSeconds           = 0;
+var currentMinutes           = 0;
+var Gselected                = 0;
+var GselectText              = ['15 min','30 min','1 uur','8 uur','12 uur','24 uur']; // #PARAMETER
+var GseriesVisibilty         = [true,true, true, true];
+var GverbrData               = [];
+var GgelvrData               = [];
+var GConsumptionPrognoseData = [];
+var GProductionPrognoseData  = [];
+var maxrecords               = 1442;
 
 function readJsonApiHistoryMin( cnt ){ 
     $.getScript( "/api/v1/powergas/minute?limit=" + cnt, function( data, textStatus, jqxhr ) {
       try {
         var jsondata = JSON.parse(data); 
         var item;
-        recordsLoaded       = jsondata.length;
-        GverbrData.length   = 0;
-        GgelvrData.length   = 0; 
+        recordsLoaded  = jsondata.length;
+
+        GverbrData.length               = 0;
+        GgelvrData.length               = 0; 
+        GConsumptionPrognoseData.length = 0;
+        GProductionPrognoseData.length  = 0;
+
         for ( var j = jsondata.length; j > 0; j-- ){    
             item = jsondata[ j-1 ];
             item[1] = item[1] * 1000; // highchart likes millisecs.
-            GverbrData.push ( [item[1], item[6]      ] );  // changed from index 9 to 6
-            GgelvrData.push ( [item[1], item[7] * -1] );   // changed from index 10 to 7
+            GverbrData.push               ( [item[1], item[6]       ] ); 
+            GgelvrData.push               ( [item[1], item[7] * -1  ] ); 
+            GConsumptionPrognoseData.push ( [item[1], item[6] * 60  ] );
+            GProductionPrognoseData.push  ( [item[1], item[7] * -60 ] );
+
         }  
         updateData();
       } catch(err) {}
@@ -68,6 +76,7 @@ readJsonApiHistoryMin( maxrecords )
 function createKwhChart() {
     Highcharts.stockChart('KwhChart', {
         chart: {
+            marginTop: 46, // make room for the wide legend
             style: {
                 fontFamily: 'robotomedium'
             },
@@ -81,11 +90,22 @@ function createKwhChart() {
                     showInNavigator: true,
                     events: {
                         legendItemClick: function (event) {
+                            //console.log( event );
+
                             if  ( this.index === 0 ) {
                                 toLocalStorage('stat-verbr-visible',!this.visible);  // #PARAMETER
                             }
+
                             if  ( this.index === 1 ) {
                                 toLocalStorage('stat-gelvr-visible',!this.visible);  // #PARAMETER
+                            }
+
+                            if  ( this.index === 2 ) {
+                                toLocalStorage('stat-verbr-visible-prognose',!this.visible);
+                            }
+
+                            if  ( this.index === 3 ) {
+                                toLocalStorage('stat-gelvr-visible-prognose',!this.visible);
                             }
                         }
                     }
@@ -174,7 +194,7 @@ function createKwhChart() {
             },
             xAxis: {
                 events: {
-                    setExtremes: function(e) {  	
+                    setExtremes: function(e) {      
                         if(typeof(e.rangeSelectorButton)!== 'undefined') {
                             for (var j = 0;  j < GselectText.length; j++){    
                                 if ( GselectText[j] == e.rangeSelectorButton.text ) {
@@ -197,11 +217,10 @@ function createKwhChart() {
                 lineColor: '#6E797C',
                 lineWidth: 1
             },
-            yAxis: {
+            yAxis: [{
                 gridLineColor: '#6E797C',
                 gridLineDashStyle: 'longdash',
                 lineWidth: 0,
-                offset: 0,
                 opposite: false,
                 labels: {
                     //useHTML: true, fix seethrough tooltip
@@ -216,6 +235,17 @@ function createKwhChart() {
                     color: '#6E797C'
                 }]
             },
+            {
+                opposite: false,
+                labels: {
+                    //useHTML: true, fix seethrough tooltip
+                    format: '{value} kWh',
+                    style: {
+                        color: '#6E797C'
+                    },
+                },
+            }
+            ],
             tooltip: {
                 useHTML: true,
                     style: {
@@ -226,23 +256,33 @@ function createKwhChart() {
                     var s = '<b>'+ Highcharts.dateFormat('%A, %Y-%m-%d %H:%M', this.x) +'</b>';
 
                     var d = this.points;
-                    var verbruikt = "verborgen";
-                    var geleverd  = "verborgen";
+                    var consumption         = "verborgen";
+                    var production          = "verborgen";
+                    var consumptionPrognose = "verborgen";
+                    var productionPrognose  = "verborgen";
 
-                    if ( $('#KwhChart').highcharts().series[0].visible === true && $('#KwhChart').highcharts().series[1].visible === true ) {
-                        verbruikt = d[0].y.toFixed(3)+" kWh (uur prognose "      + (d[0].y*60).toFixed(3) + " kWh).";
-                        geleverd  = -1 * d[1].y.toFixed(3)+" kWh (uur prognose " + (-1 * d[1].y*60).toFixed(3) + " kWh).";
-                    }
-                    if ( $('#KwhChart').highcharts().series[0].visible === true && $('#KwhChart').highcharts().series[1].visible === false ){
-                        verbruikt = d[0].y.toFixed(3)+" kWh (uur prognose "      + (d[0].y*60).toFixed(3) + " kWh).";
+                    for (var i=0,  tot=d.length; i < tot; i++) {
+                        //console.log (d[i].series.userOptions.id);
+
+                        if  ( d[i].series.userOptions.id === 'consumption') {
+                            consumption = d[i].y.toFixed(3) + " kWh";
+                        }
+                        if  ( d[i].series.userOptions.id === 'production') {
+                            production = (-1 * d[i].y).toFixed(3) + " kWh";
+                        }
+                        if  ( d[i].series.userOptions.id === 'consumptionPrognose') {
+                            consumptionPrognose = d[i].y.toFixed(3) + " kWh";
+                        }
+                        if  ( d[i].series.userOptions.id === 'productionPrognose') {
+                            productionPrognose = (-1 * d[i].y).toFixed(3) + " kWh";
+                        }
                     }
 
-                    if ( $('#KwhChart').highcharts().series[0].visible === false && $('#KwhChart').highcharts().series[1].visible === true ){
-                        geleverd = -1 * d[0].y.toFixed(3)+" kWh (uur prognose " + (-1 * d[0].y*60).toFixed(3) + " kWh).";
-                    }
-            
-                    s += '<br/><span style="color: #F2BA0F;">verbruikt: </span>'+verbruikt;
-                    s += '<br/><span style="color: #98D023;">geleverd : </span>'+geleverd; 
+                    s += '<br/><span style="color: #F2BA0F;">verbruikt: </span>' + consumption;
+                    s += '<br/><span style="color: #98D023;">geleverd : </span>' + production; 
+                    s += '<br/><span style="color: #F2BA0F;">prognose verbruikt: </span>' + consumptionPrognose;
+                    s += '<br/><span style="color: #98D023;">prognose geleverd : </span>' + productionPrognose; 
+
                     return s;
                 },
                 backgroundColor: '#F5F5F5',
@@ -257,7 +297,7 @@ function createKwhChart() {
                     //minTickInterval:      60 * 60000,  
                     //maxRange:             24 * 60 * 60000,
                     dateTimeLabelFormats: {
-                        day: '%d %B'	
+                        day: '%d %B'    
                     }    
                 },
                 enabled: true,
@@ -274,16 +314,40 @@ function createKwhChart() {
             },
             series: [ 
             {
+                id: 'consumption',
+                yAxis: 0,
                 visible: GseriesVisibilty[0],
                 name: 'kWh verbruikt',
                 color: '#F2BA0F',
-                data: GverbrData 
+                data: GverbrData, 
             }, 
             {
+                id: 'production',
+                yAxis: 0,
                 visible: GseriesVisibilty[1],
                 name: 'kWh geleverd',
                 color: '#98D023',
                 data: GgelvrData
+            },
+            {
+                id: 'consumptionPrognose',
+                yAxis: 1,
+                type: 'areaspline',
+                //dashStyle: 'ShortDot',
+                visible: GseriesVisibilty[2],
+                name: 'prognose kWh verbruikt',
+                color: '#F2BA0F',
+                data: GConsumptionPrognoseData, 
+            }, 
+            {
+                id: 'productionPrognose',
+                yAxis: 1,
+                type: 'areaspline',
+                //dashStyle: 'ShortDot',
+                visible: GseriesVisibilty[3],
+                name: 'prognose kWh geleverd',
+                color: '#98D023',
+                data: GProductionPrognoseData
             }],
             lang: {
                 noData: "Geen gegevens beschikbaar."
@@ -305,6 +369,9 @@ function updateData() {
 
     chart.series[0].setData( GverbrData );
     chart.series[1].setData( GgelvrData );
+    chart.series[2].setData( GConsumptionPrognoseData  );
+    chart.series[3].setData( GProductionPrognoseData );
+
 }
 
 function DataLoop() {
@@ -332,8 +399,10 @@ function DataLoop() {
 $(function() {
     toLocalStorage('stats-menu',window.location.pathname);
     Gselected = parseInt(getLocalStorage('stat-select-index'),10);
-    GseriesVisibilty[0] =JSON.parse(getLocalStorage('stat-verbr-visible'));  // #PARAMETER
-    GseriesVisibilty[1] =JSON.parse(getLocalStorage('stat-gelvr-visible'));  // #PARAMETER
+    GseriesVisibilty[0] = JSON.parse(getLocalStorage('stat-verbr-visible'));  // #PARAMETER
+    GseriesVisibilty[1] = JSON.parse(getLocalStorage('stat-gelvr-visible'));  // #PARAMETER
+    GseriesVisibilty[2] = JSON.parse(getLocalStorage('stat-gelvr-visible-prognose'));  // ONLY for minute chart
+    GseriesVisibilty[3] = JSON.parse(getLocalStorage('stat-gelvr-visible-prognose'));  // ONLY for minute chart
     Highcharts.setOptions({
     global: {
         useUTC: false
@@ -347,18 +416,14 @@ $(function() {
 </head>
 <body>
 
-<div class="top-wrapper">
-    <div class="content-wrapper">   
-        <?php page_header();?>     
-    </div>
-</div>
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">
        <!-- header 2 -->
        <?php pageclock(); ?>
        <?php page_menu_header(0); ?>
-	   <?php weather_info(); ?>
+       <?php weather_info(); ?>
     </div>
 </div>
 
@@ -370,19 +435,20 @@ $(function() {
     </div> 
     <div class="mid-content-2 pad-13">
     <!-- links -->
-    	<div class="frame-2-top">
+        <div class="frame-2-top">
             <span class="text-2">minuten (kWh)</span> 
                 <div class="content-wrapper" id="help_icon" onMouseOver="show_help_detail()" >
                     <i class="color-menu fas fa-question-circle" data-fa-transform="grow-10 right-20 up-4"></i>
                     <div class="cursor-pointer" id="help_detail" onclick="$('#help_detail').hide();">
                         <span><?php echo strIdx(75);?>"</span>
                 </div>
-            </span>
-                
-    	</div>
-    	<div class="frame-2-bot"> 
-    	<div id="KwhChart" style="width:100%; height:480px;"></div>	
-    	</div>
+            <!-- </span> -->
+
+        </div>
+        <div class="frame-2-bot"> 
+        <div id="KwhChart" style="width:100%; height:480px;"></div>    
+        </div>
+        </div>
 </div>
 </div>
 <div id="loading-data"><img src="./img/ajax-loader.gif" alt="Even geduld aub." height="15" width="128" /></div>   

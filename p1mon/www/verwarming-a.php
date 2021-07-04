@@ -370,21 +370,21 @@ $('#tempChartOut').highcharts({
 );
 }
 
-function createChartGrafiek() {	
-	$('#grafiekTemp').highcharts({
-    	chart: {
-        	type: 'areasplinerange' 	
-    	},
+function createChartGrafiek() {    
+    $('#grafiekTemp').highcharts({
+        chart: {
+            type: 'areasplinerange'     
+        },
       legend: { enabled: false },
-    	exporting: { enabled: false },
-    	credits: { enabled: false },
-    	title: { text: null }, 	
-    	tooltip: {
-        	useHTML: true,
-        	style: {
-     			padding: 3,
-     			color: '#6E797C'
- 			},
+        exporting: { enabled: false },
+        credits: { enabled: false },
+        title: { text: null },     
+        tooltip: {
+            useHTML: true,
+            style: {
+                 padding: 3,
+                 color: '#6E797C'
+             },
        formatter: function() {
         var t_high  = 0;
         var t_low   = 0;
@@ -399,19 +399,19 @@ function createChartGrafiek() {
             s += '<br/><span style="color: #0000FF;"> ' + ui_uit_label + ':' + t_low.toFixed(1)+'°C</span>';
             s += '<br/><span style="color: #333"><b></b>Verschil temperatuur:</b></span>';
             s += '<br/><span style="color: #3333FF">' + ui_in_label + ' - ' + ui_uit_label + ':'+t_delta.toFixed(1)+"°C</span>";
-				return s;
-			  },
-	    	backgroundColor: '#F5F5F5',
-	    	borderColor: '#DCE1E3',
-	    	crosshairs: [true, true],
-	    	borderWidth: 1
-	    },  
-	    xAxis: {   		
-	      type: 'datetime',
-	      lineColor: '#6E797C',
-		    lineWidth: 1     
-	    },
-    	yAxis: {
+                return s;
+              },
+            backgroundColor: '#F5F5F5',
+            borderColor: '#DCE1E3',
+            crosshairs: [true, true],
+            borderWidth: 1
+        },  
+        xAxis: {           
+          type: 'datetime',
+          lineColor: '#6E797C',
+            lineWidth: 1     
+        },
+        yAxis: {
           //tickAmount: 7,
           tickInterval: 0.8,
           opposite: true,
@@ -424,10 +424,10 @@ function createChartGrafiek() {
                 color: '#384042'
               }
             },
-        	title: { 
+            title: { 
                 text: null
           }
-    	},
+        },
       series: [{
       dashStyle: 'ShortDot',
       name: 'verschil',
@@ -470,11 +470,8 @@ $(function() {
 </script>
 </head>
 <body>
-<div class="top-wrapper">
-    <div class="content-wrapper">
-        <?php page_header();?>    
-    </div>
-</div>
+
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">
@@ -493,10 +490,10 @@ $(function() {
     </div> 
     <div class="mid-content-2 pad-13">
     <!-- links -->
-    	<div class="frame-2-top">
-    		<span class="text-2">actuele verwarming temperatuur in °C</span>
-    	</div>
-    	<div class="frame-2-bot"> 
+        <div class="frame-2-top">
+            <span class="text-2">actuele verwarming temperatuur in °C</span>
+        </div>
+        <div class="frame-2-bot"> 
         
           <div class="content-wrapper">
             <div style="width: 50%; float:left">
@@ -509,14 +506,14 @@ $(function() {
           </div>
 
           <div class="pad-3" style="float:left;">
-    		    <div class="frame-3-top">
-    			<span class="text-3">laatste 5 minuten</span>
-    			</div>
-    			<div class="frame-2-bot"> 
-    			  <div id="grafiekTemp" style="width:880px; height:110px;"></div>	
-    			</div>		
-    		</div>
-    	</div>
+                <div class="frame-3-top">
+                <span class="text-3">laatste 5 minuten</span>
+                </div>
+                <div class="frame-2-bot"> 
+                  <div id="grafiekTemp" style="width:880px; height:110px;"></div>    
+                </div>        
+            </div>
+        </div>
 </div>
 </div>
 </body>

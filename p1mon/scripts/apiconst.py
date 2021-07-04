@@ -1195,12 +1195,12 @@ HELP_ROUTE_POWER_PRODUCTION_MIN_DAY_MONTH_YEAR_JSON = {
          {
            "name" : JSON_API_PROD_PULS_CNT_H,
            "description" : EXPL_API_PROD_PULS_CNT_H,
-           "type": TYPE_JSON_NUMBER
+           "type": TYPE_JSON_INTEGER
         },
         {
            "name" : JSON_API_PROD_PULS_CNT_L,
            "description" : EXPL_API_PROD_PULS_CNT_L,
-           "type": TYPE_JSON_NUMBER
+           "type": TYPE_JSON_INTEGER
          },
          {
            "name" : JSON_API_PROD_KWH_TOTAL_H,

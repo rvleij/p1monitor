@@ -17,7 +17,7 @@ from util import setFile2user, getUtcTime
 from gpio import gpioDigtalOutput
 from datetime import datetime
 
-prgname             = 'P1GPIO.py'
+prgname             = 'P1GPIO'
 config_db           = configDB()
 rt_status_db        = rtStatusDb()
 e_db_serial         = SqlDb1()

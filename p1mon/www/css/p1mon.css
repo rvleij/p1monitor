@@ -120,6 +120,7 @@ div#export_sql_msg {
     display: none;
 }
 
+/* old remove */
 div#import_sql_msg {
     border-radius: 5px 5px 5px 5px;
     -moz-border-radius: 5px 5px 5px 5px;
@@ -133,6 +134,32 @@ div#import_sql_msg {
     box-shadow: 0px 5px 8px -2px #eaeaea;
     font-size: 1em;
     display: none;
+}
+
+div#import_sql_message {
+    border-radius: 5px 5px 5px 5px;
+    -moz-border-radius: 5px 5px 5px 5px;
+    -webkit-border-radius: 5px 5px 5px 5px;
+    border: 1px solid #DCE1E3;
+    padding: 10px 0px 10px 0px;
+    width: 900px;
+    text-align: left;
+    /* color: #83B31E; */
+    background-color: #F5F5F5;
+    box-shadow: 0px 5px 8px -2px #eaeaea;
+    font-size: 1em;
+    display: none;
+}
+
+div#scroll_window {
+    overflow: auto;
+    background-color: #FFFFFF;
+    border-radius: 5px 5px 5px 5px;
+    -moz-border-radius: 5px 5px 5px 5px;
+    -webkit-border-radius: 5px 5px 5px 5px;
+    margin: 30px 10px 10px 10px;
+    padding: 5px 5px 5px 5px;
+    height: 250px;
 }
 
 div#cancel_bar {
@@ -384,6 +411,11 @@ select {
 
 .color-menu {
     color: #10D0E7;
+}
+
+
+.color-menu-not-active {
+    color: #aaaaaa;
 }
 
 .color-ok {
@@ -857,6 +889,22 @@ div#right-wrapper-config-right-4 {
     font-size: 1em;
 }
 
+
+.text-28 {
+    color: #0C7DAD;
+    font-size: 1.2em;
+    position: relative;
+    top: 0px;
+    left: 10px;
+}
+
+
+.text-29 {
+    color: #6E797C;
+    font-size: 0.9em;
+}
+
+
 /* invoer veld */
 
 .input-1 {
@@ -1005,6 +1053,17 @@ div#right-wrapper-config-right-4 {
     margin: 5px 0px 5px 0px;
 }
 
+
+.input-15 {
+    border-radius: 3px 3px 3px 3px;
+    -moz-border-radius: 3px 3px 3px 3px;
+    -webkit-border-radius: 3px 3px 3px 3px;
+    margin: 0px 0px 5px 0px;
+    background-color: #F5F5F5 !important;
+    font-size: 1.2em;
+    font-family: 'robotoblack';
+    border: 1px solid #DCE1E3;
+}
 
 
 *:focus {

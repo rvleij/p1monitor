@@ -119,9 +119,9 @@ start() {
     $PRG9_PATH$PRG9$PRG9_PARAMETERS 2>&1 >/dev/null &
     echo "$PRG9_ALIAS gestart."
 
-    # MQTT start
-    $PRG_PATH$PRG13 &>/dev/null &
-    echo "$PRG13 gestart."
+    # MQTT start (done by wachtdog process )
+    #$PRG_PATH$PRG13 &>/dev/null &
+    #echo "$PRG13 gestart."
 
     # GPIO start
     $PRG_PATH$PRG14 &>/dev/null &
@@ -189,9 +189,6 @@ stop() {
     # GPIO stop
     process_kill $PRG14
 
-    # MQTT stop
-    process_kill $PRG13
-
     # API stop
     process_kill $PRG9
 
@@ -218,6 +215,9 @@ stop() {
 
     # P1WatermeterV2
     process_kill $PRG16 5
+
+    # MQTT stop
+    process_kill $PRG13 5
 
 }
 

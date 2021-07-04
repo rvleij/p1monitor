@@ -28,20 +28,22 @@ if ( checkDisplayIsActive( 129 ) == false) { return; }
 <script src="./js/p1mon-util.js"></script>
 
 <script>
-var recordsLoaded    = 0;
+var recordsLoaded            = 0;
 var initloadtimer;
-var mins             = 1;  
-var secs             = mins * 60;
-var currentSeconds   = 0;
-var currentMinutes   = 0;
-var Gselected        = 0;
-var GselectText      = ['15 min','30 min','1 uur','8 uur','12 uur','24 uur']; // #PARAMETER
-var GseriesVisibilty = [true,true];
-var GHighTariffData  = [];
-var GLowTariffData   = [];
-var maxrecords       = 1442;
-var high_tariff_color = '#98D023';
-var low_tariff_color  = '#7FAD1D';
+var mins                     = 1;  
+var secs                     = mins * 60;
+var currentSeconds           = 0;
+var currentMinutes           = 0;
+var Gselected                = 0;
+var GselectText              = ['15 min','30 min','1 uur','8 uur','12 uur','24 uur']; // #PARAMETER
+var GseriesVisibilty         = [true,true, true, true];
+var GHighTariffData          = [];
+var GLowTariffData           = [];
+var GHighTariffDataPrognose  = [];
+var GLowTariffDataPrognose   = [];
+var maxrecords               = 1442;
+var high_tariff_color        = '#98D023';
+var low_tariff_color         = '#7FAD1D';
 
 function readJsonApiHistoryPowerMin( cnt ){ 
     $.getScript( "/api/v1/powerproduction/minute?limit=" + cnt, function( data, textStatus, jqxhr ) {
@@ -49,13 +51,18 @@ function readJsonApiHistoryPowerMin( cnt ){
         var jsondata = JSON.parse(data); 
         var item;
         recordsLoaded       = jsondata.length;
-        GHighTariffData.length   = 0;
-        GLowTariffData.length   = 0; 
+        GHighTariffData.length         = 0;
+        GLowTariffData.length          = 0; 
+        GHighTariffDataPrognose.length = 0;
+        GLowTariffDataPrognose.length  = 0;
+
         for ( var j = jsondata.length; j > 0; j-- ) {
             item = jsondata[ j-1 ];
             item[1] = item[1] * 1000;                     // highchart likes millisecs.
             GHighTariffData.push ( [item[1], item[4] ] ); // kWh during the period for the high tariff
             GLowTariffData.push  ( [item[1], item[5] ] );  // kWh during the period for the low tariff
+            GHighTariffDataPrognose.push ( [item[1], item[4] * 60 ] ); // kWh during the period for the high tariff prognose
+            GLowTariffDataPrognose.push  ( [item[1], item[5] * 60 ] ); // kWh during the period for the low tariff prognose
         }  
         updateData();
       } catch(err) {}
@@ -69,6 +76,7 @@ readJsonApiHistoryPowerMin( maxrecords )
 function createKwhChart() {
     Highcharts.stockChart('KwhChart', {
         chart: {
+            marginTop: 46, // make room for the wide legend
             style: {
                 fontFamily: 'robotomedium'
             },
@@ -87,6 +95,12 @@ function createKwhChart() {
                             }
                             if  ( this.index === 1 ) {
                                 toLocalStorage('powerprod-min-low-tariff-visible',!this.visible);  // #PARAMETER
+                            }
+                            if  ( this.index === 2 ) {
+                                toLocalStorage('powerprod-min-high-prognose-tariff-visible',!this.visible);  // #PARAMETER
+                            }
+                            if  ( this.index === 3 ) {
+                                toLocalStorage('powerprod-min-low-prognose-tariff-visible',!this.visible);  // #PARAMETER
                             }
                         }
                     }
@@ -199,11 +213,10 @@ function createKwhChart() {
             lineColor: '#6E797C',
             lineWidth: 1
             },
-            yAxis: {
+            yAxis: [{
                 gridLineColor: '#6E797C',
                 gridLineDashStyle: 'longdash',
                 lineWidth: 0,
-                offset: 0,
                 opposite: false,
                 labels: {
                     //useHTML: true, fix seethrough tooltip
@@ -218,6 +231,17 @@ function createKwhChart() {
                     color: '#6E797C'
                 }]
             },
+            {
+                opposite: false,
+                labels: {
+                    //useHTML: true, fix seethrough tooltip
+                    format: '{value} kWh',
+                    style: {
+                        color: '#6E797C'
+                    },
+                },
+            }
+            ],
             tooltip: {
                 useHTML: true,
                     style: {
@@ -228,24 +252,35 @@ function createKwhChart() {
                     var s = '<b>'+ Highcharts.dateFormat('%A, %Y-%m-%d %H:%M', this.x) +'</b>';
 
                     var d = this.points;
-                    var hoogTarief = "verborgen";
-                    var laagTarief = "verborgen";
+                    var hoogTarief          = "verborgen";
+                    var laagTarief          = "verborgen";
+                    var hoogTariefPrognose  = "verborgen";
+                    var laagTariefPrognose  = "verborgen";
 
-                    if ( $('#KwhChart').highcharts().series[0].visible === true && $('#KwhChart').highcharts().series[1].visible === true ) {
-                        hoogTarief = d[0].y.toFixed(4)+" kWh (uur prognose " + (d[0].y*60).toFixed(3) + " kWh).";
-                        laagTarief = d[1].y.toFixed(4)+" kWh (uur prognose " + (d[1].y*60).toFixed(3) + " kWh).";
-                    }
-                    if ( $('#KwhChart').highcharts().series[0].visible === true && $('#KwhChart').highcharts().series[1].visible === false ){
-                        hoogTarief = d[0].y.toFixed(4)+" kWh (uur prognose " + (d[0].y*60).toFixed(3) + " kWh).";
+                    for (var i=0,  tot=d.length; i < tot; i++) {
+                        //console.log (d[i].series.userOptions.id);
+
+                        if  ( d[i].series.userOptions.id === 'hightariff') {
+                            hoogTarief = d[i].y.toFixed(3) + " kWh";
+                        }
+                        if  ( d[i].series.userOptions.id === 'lowtariff') {
+                            laagTarief = d[i].y.toFixed(3) + " kWh";
+                        }
+                        if  ( d[i].series.userOptions.id === 'hightariffprognose') {
+                            hoogTariefPrognose = d[i].y.toFixed(3) + " kWh";
+                        }
+                        if  ( d[i].series.userOptions.id === 'lowtariffprognose') {
+                            laagTariefPrognose = d[i].y.toFixed(3) + " kWh";
+                        }
                     }
 
-                    if ( $('#KwhChart').highcharts().series[0].visible === false && $('#KwhChart').highcharts().series[1].visible === true ){
-                        laagTarief = d[0].y.toFixed(4)+" kWh (uur prognose " + (d[0].y*60).toFixed(3) + " kWh).";
-                    }
-            
-                    s += '<br/><span style="color:' + high_tariff_color + ';">Hoog tarief:&nbsp;</span>'        + hoogTarief;
-                    s += '<br/><span style="color:' + low_tariff_color  + ';">Laag tarief&nbsp;:&nbsp;</span>'  + laagTarief; 
+                    s += '<br/><span style="color: #F2BA0F;">kWh hoog tarief: </span>' + hoogTarief;
+                    s += '<br/><span style="color: #98D023;">kWh laag tarief: : </span>' + laagTarief; 
+                    s += '<br/><span style="color: #F2BA0F;">prognose kWh hoog tarief: </span>' + hoogTariefPrognose;
+                    s += '<br/><span style="color: #98D023;">prognose kWh laag tarief: </span>' + laagTariefPrognose; 
+
                     return s;
+
                 },
                 backgroundColor: '#F5F5F5',
                 borderColor: '#DCE1E3',
@@ -272,17 +307,44 @@ function createKwhChart() {
             },
             series: [
             {
+                id: 'hightariff',
+                yAxis: 0,
+                type: 'areaspline',
                 visible: GseriesVisibilty[0],
                 name: 'kWh hoog tarief',
                 color: high_tariff_color,
                 data: GHighTariffData 
             },
             {
+                id: 'lowtariff',
+                yAxis: 0,
+                type: 'areaspline',
                 visible: GseriesVisibilty[1],
                 name: 'kWh laag tarief',
                 color: low_tariff_color,
                 data: GLowTariffData
-            }],
+            },
+            {
+                id: 'hightariffprognose',
+                yAxis: 1,
+                type: 'areaspline',
+                //dashStyle: 'ShortDot',
+                visible: GseriesVisibilty[2],
+                name: 'prognose kWh hoog tarief',
+                color: high_tariff_color,
+                data: GHighTariffDataPrognose, 
+            }, 
+            {
+                id: 'lowtariffprognose',
+                yAxis: 1,
+                type: 'areaspline',
+                //dashStyle: 'ShortDot',
+                visible: GseriesVisibilty[3],
+                name: 'prognose kWh laag tarief',
+                color: low_tariff_color,
+                data: GLowTariffDataPrognose
+            }
+            ],
             lang: {
                 noData: "Geen gegevens beschikbaar."
             },
@@ -302,6 +364,8 @@ function updateData() {
     var chart = $('#KwhChart').highcharts();
     chart.series[0].setData( GHighTariffData );
     chart.series[1].setData( GLowTariffData );
+    chart.series[2].setData( GHighTariffDataPrognose );
+    chart.series[3].setData( GLowTariffData );
 }
 
 function DataLoop() {
@@ -326,11 +390,15 @@ function DataLoop() {
     setTimeout('DataLoop()',1000);
 }
 
+
 $(function() {
     toLocalStorage('powerproduction-menu', window.location.pathname );
     Gselected = parseInt( getLocalStorage('powerprod-min-select-index'), 10 );
     GseriesVisibilty[0] =JSON.parse(getLocalStorage('powerprod-min-high-tariff-visible'));  // #PARAMETER
     GseriesVisibilty[1] =JSON.parse(getLocalStorage('powerprod-min-low-tariff-visible') );  // #PARAMETER
+    GseriesVisibilty[2] =JSON.parse(getLocalStorage('powerprod-min-high-prognose-tariff-visible') );  // #PARAMETER
+    GseriesVisibilty[3] =JSON.parse(getLocalStorage('powerprod-min-low-prognose-tariff-visible') );  // #PARAMETER
+
     Highcharts.setOptions({
     global: {
         useUTC: false
@@ -344,11 +412,7 @@ $(function() {
 </head>
 <body>
 
-<div class="top-wrapper">
-    <div class="content-wrapper">
-        <?php page_header();?>
-    </div>
-</div>
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">

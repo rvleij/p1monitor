@@ -3,55 +3,55 @@
 // lees de config database uit om de fileshare status te lezen
 // op basis van uit,data of dev word niets of checked terug gegeven.
 function readStatusDb($id){
-	$sqlstr = "select id, status, label, security from status where id=$id";
-	$dbstr = '/p1mon/mnt/ramdisk/status.db'; 
-	try {
-		$data = array();
-		$db = new SQLite3($dbstr,SQLITE3_OPEN_READONLY);
-		$db -> busyTimeout(300000);  // fix for database locks, wait 300 sec = 5 min
-		$result = $db->query($sqlstr);
-		//var_dump($result->fetchArray());
-		$row = $result->fetchArray();	
-		$db->close();
-		return $row["STATUS"];
-	} catch (Exception $e) {
-		echo 'Exception: ',  $e->getMessage(), "\n";
-	}
+    $sqlstr = "select id, status, label, security from status where id=$id";
+    $dbstr = '/p1mon/mnt/ramdisk/status.db'; 
+    try {
+        $data = array();
+        $db = new SQLite3($dbstr,SQLITE3_OPEN_READONLY);
+        $db -> busyTimeout(300000);  // fix for database locks, wait 300 sec = 5 min
+        $result = $db->query($sqlstr);
+        //var_dump($result->fetchArray());
+        $row = $result->fetchArray();    
+        $db->close();
+        return $row["STATUS"];
+    } catch (Exception $e) {
+        echo 'Exception: ',  $e->getMessage(), "\n";
+    }
 }
 
 function debugLog($string) {
-	error_log($string."\n", 3, "/var/tmp/php-debug.log");
+    error_log($string."\n", 3, "/var/tmp/php-debug.log");
 }
 
 function encodeString ($input, $seed) {
-		$encoded_string = '';
-		$command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1CryptoV2.py --enc ".base64_encode($input)." --seed ".$seed."'";
-		$arr_execoutput_enc = []; // make sure old stuff is cleared.
-		exec($command ,$arr_execoutput_enc, $exec_ret_value );
-		#debugLog('$encodeString output='.$arr_execoutput_enc);
-		#debugLog('$encodeString return value='.$exec_ret_value);
-		if (empty($arr_execoutput_enc)) { return ''; } // nothing to decode.
-		return $arr_execoutput_enc[0];
+        $encoded_string = '';
+        $command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1CryptoV2.py --enc ".base64_encode($input)." --seed ".$seed."'";
+        $arr_execoutput_enc = []; // make sure old stuff is cleared.
+        exec($command ,$arr_execoutput_enc, $exec_ret_value );
+        #debugLog('$encodeString output='.$arr_execoutput_enc);
+        #debugLog('$encodeString return value='.$exec_ret_value);
+        if (empty($arr_execoutput_enc)) { return ''; } // nothing to decode.
+        return $arr_execoutput_enc[0];
 }
 
 function decodeString($config_id, $seed) {
-	$decoded_string = '';
-	$command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1CryptoV2.py --dec ".config_read($config_id)." --seed ".$seed."'";
-	$arr_execoutput_dec = []; // make sure old stuff is cleared.
-	exec($command ,$arr_execoutput_dec, $exec_ret_value );
-	#debugLog('$decodeString output='.$arr_execoutput_dec);
-	#debugLog('$decodeString return value='.$exec_ret_value);
-	if (empty($arr_execoutput_dec)) { return ''; } // nothing to decode.
-	return base64_decode($arr_execoutput_dec[0], true);
+    $decoded_string = '';
+    $command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1CryptoV2.py --dec ".config_read($config_id)." --seed ".$seed."'";
+    $arr_execoutput_dec = []; // make sure old stuff is cleared.
+    exec($command ,$arr_execoutput_dec, $exec_ret_value );
+    #debugLog('$decodeString output='.$arr_execoutput_dec);
+    #debugLog('$decodeString return value='.$exec_ret_value);
+    if (empty($arr_execoutput_dec)) { return ''; } // nothing to decode.
+    return base64_decode($arr_execoutput_dec[0], true);
 }
 
 function decodeStringNoBase64($config_id, $seed) {
-	$decoded_string = '';
-	$command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1CryptoV2.py --dec ".config_read($config_id)." --seed ".$seed."'";
-	$arr_execoutput_dec = []; // make sure old stuff is cleared.
-	exec($command ,$arr_execoutput_dec, $exec_ret_value );
-	if (empty($arr_execoutput_dec)) { return ''; } // nothing to decode.
-	return $arr_execoutput_dec[0];
+    $decoded_string = '';
+    $command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1CryptoV2.py --dec ".config_read($config_id)." --seed ".$seed."'";
+    $arr_execoutput_dec = []; // make sure old stuff is cleared.
+    exec($command ,$arr_execoutput_dec, $exec_ret_value );
+    if (empty($arr_execoutput_dec)) { return ''; } // nothing to decode.
+    return $arr_execoutput_dec[0];
 }
 
 
@@ -76,55 +76,55 @@ function inputCleanDigitsOnly($string) {
 
 // true = ok, false = not ok
 function cronSafeCharacters($str_in) {
-	$regex = "/[^0-9,\/\-\*]+/";
-	if (preg_match($regex, $str_in)) { 
-		//echo $str_in;
-		return False; 
-	}
-	return True;
+    $regex = "/[^0-9,\/\-\*]+/";
+    if (preg_match($regex, $str_in)) { 
+        //echo $str_in;
+        return False; 
+    }
+    return True;
 }
 
 // schrijf een semafore file met de volgende layout
 function writeSemaphoreFile($filename) {
-	$command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1Semaphore.py -n ".$filename."' &";
-	$arr_execoutput_dec = []; // make sure old stuff is cleared.
-	exec($command ,$arr_execoutput_dec, $exec_ret_value );
+    $command = "/p1mon/scripts/p1monExec -p '/p1mon/scripts/P1Semaphore.py -n ".$filename."' &";
+    $arr_execoutput_dec = []; // make sure old stuff is cleared.
+    exec($command ,$arr_execoutput_dec, $exec_ret_value );
 }
 
 // update de sqllite DB config met de sql
 // fout is een waarde groter dan 1
 function updateConfigDb($sql){
-  	$dbstr = '/p1mon/mnt/ramdisk/config.db'; 
-  	$r = 0;	
-  	try {
-		$db = new SQLite3($dbstr,SQLITE3_OPEN_READWRITE);
-		$db -> busyTimeout(300000);  // fix for database locks, wait 300 sec = 5 min
-  		$db->exec($sql);
-  		if ($db->lastErrorCode() > 0) $r = 1;	
-  		$db->close();
-  	} catch (Exception $e) {
-		$r=1;
-	}
-	return $r; 	
+      $dbstr = '/p1mon/mnt/ramdisk/config.db'; 
+      $r = 0;    
+      try {
+        $db = new SQLite3($dbstr,SQLITE3_OPEN_READWRITE);
+        $db -> busyTimeout(300000);  // fix for database locks, wait 300 sec = 5 min
+          $db->exec($sql);
+          if ($db->lastErrorCode() > 0) $r = 1;    
+          $db->close();
+      } catch (Exception $e) {
+        $r=1;
+    }
+    return $r;     
 }
 
 // lees de config database uit om de fileshare status te lezen
 // op basis van uit,data of dev word niets of checked terug gegeven.
 function readFileShareStatus($cmpstr){
-	$sqlstr = "select id,parameter from config where id=6";
-	$dbstr = '/p1mon/mnt/ramdisk/config.db'; 
-	try {
-		$data = array();
-		$db = new SQLite3($dbstr,SQLITE3_OPEN_READONLY);
-		$db -> busyTimeout(300000);  // fix for database locks, wait 300 sec = 5 min
-		$result = $db->query($sqlstr);
-		//var_dump($result->fetchArray());
-		$row = $result->fetchArray();	
-		$db->close();
-	} catch (Exception $e) {
-		echo 'Exception: ',  $e->getMessage(), "\n";
-	}
-	if ($row[1] == $cmpstr ) { echo " checked"; } 
+    $sqlstr = "select id,parameter from config where id=6";
+    $dbstr = '/p1mon/mnt/ramdisk/config.db'; 
+    try {
+        $data = array();
+        $db = new SQLite3($dbstr,SQLITE3_OPEN_READONLY);
+        $db -> busyTimeout(300000);  // fix for database locks, wait 300 sec = 5 min
+        $result = $db->query($sqlstr);
+        //var_dump($result->fetchArray());
+        $row = $result->fetchArray();    
+        $db->close();
+    } catch (Exception $e) {
+        echo 'Exception: ',  $e->getMessage(), "\n";
+    }
+    if ($row[1] == $cmpstr ) { echo " checked"; } 
 }
 
 // haal het adres van de PHP server op
@@ -167,12 +167,12 @@ function getClientIP()
 // en een private range adres is RFC1918
 // True = een valide private range
 function validLocalIpAdress($ip) {
-	if( filter_var( $ip, FILTER_VALIDATE_IP,FILTER_FLAG_IPV4) ){ 	
-		if( filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE) ){ 
-			return False; 			
-		} else { return True; }
-		
-	} else { return False; }
+    if( filter_var( $ip, FILTER_VALIDATE_IP,FILTER_FLAG_IPV4) ){     
+        if( filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE) ){ 
+            return False;             
+        } else { return True; }
+        
+    } else { return False; }
 }
 
 // check of in de config of internet gebruik is toegestaan.
@@ -191,50 +191,50 @@ function isInternetIPAllowed(){
 // $abs (alleen positieve waarde worden terugegeven
 // bij een fout wordt 0 terug gegeven.
 function checkFloat($in, $decimals, $maxval, $abs) {
-  	$in = str_replace(",",".",$in);
-  	if (!is_numeric ($in)){ return 0;} 
-  	$in = floatval(number_format ( $in ,$decimals ));	
-  	 	
- 	if ( $in > $maxval) { return 0;}
- 	if ($abs == 1 && $in < 0 ) { $in = $in * -1; }
-  	return $in;
+      $in = str_replace(",",".",$in);
+      if (!is_numeric ($in)){ return 0;} 
+      $in = floatval(number_format ( $in ,$decimals ));    
+           
+     if ( $in > $maxval) { return 0;}
+     if ($abs == 1 && $in < 0 ) { $in = $in * -1; }
+      return $in;
   }
 
   
 // indien zomertijd voeg dan een uur in sec toe.
 function TimeDSTAdjustTicks()
 {
-	date_default_timezone_set('Europe/Amsterdam');			
-	if(date('I')) {return 3600;}
-	else return 0; // we are in winter time
+    date_default_timezone_set('Europe/Amsterdam');            
+    if(date('I')) {return 3600;}
+    else return 0; // we are in winter time
 }
 
 // indien zomertijd voeg dan een uur toe aan
 // uren en strip de datum
 function TimeDSTAdjust($t)
 {
-	date_default_timezone_set('Europe/Amsterdam');	
-	$s=split(' ',$t);
-	// get rid off date
-	if (count($s) > 1) { $v = $s[1];}
-	else $v = $s[0];
-	
-	if(date('I')) {
-		$arr=split(':', $v);
-		
-		$h=$arr[0]+1;
-		if ($h==24) { $h=0;}
-		$arr[0]=sprintf('%02d', $h);	
-		return $arr[0].":".$arr[1].":".$arr[2];
-	}
-	return $v;
+    date_default_timezone_set('Europe/Amsterdam');    
+    $s=split(' ',$t);
+    // get rid off date
+    if (count($s) > 1) { $v = $s[1];}
+    else $v = $s[0];
+    
+    if(date('I')) {
+        $arr=split(':', $v);
+        
+        $h=$arr[0]+1;
+        if ($h==24) { $h=0;}
+        $arr[0]=sprintf('%02d', $h);    
+        return $arr[0].":".$arr[1].":".$arr[2];
+    }
+    return $v;
 }
 
 function DateStrip($t){
-	$s=split(' ',$t);
-	// get rid off date
-	if (count($s) > 1) { $v = $s[1];}
-	else $v = $s[0];
-	return $v;
+    $s=split(' ',$t);
+    // get rid off date
+    if (count($s) > 1) { $v = $s[1];}
+    else $v = $s[0];
+    return $v;
 }
 ?>

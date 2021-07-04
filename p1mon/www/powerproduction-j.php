@@ -214,7 +214,7 @@ function createKwhChart() {
             },
             xAxis: {
             events: {
-                setExtremes: function(e) {  	
+                setExtremes: function(e) {      
                     if(typeof(e.rangeSelectorButton)!== 'undefined') {
                         for (var j = 0;  j < GselectText.length; j++){    
                             if ( GselectText[j] == e.rangeSelectorButton.text ) {
@@ -334,7 +334,7 @@ function createKwhChart() {
                     minTickInterval:  5 * 365 * 24 * 3600000, 
                     maxRange:        30 * 365 * 24 * 3600000,
                     dateTimeLabelFormats: {
-                        day: '%d %B'	
+                        day: '%d %B'    
                     }    
                 },
                 enabled: true,
@@ -474,18 +474,15 @@ $(function() {
 </script>
 </head>
 <body>
-<div class="top-wrapper">
-    <div class="content-wrapper">   
-        <?php page_header();?>     
-    </div>
-</div>
+
+<?php page_header();?>
 
 <div class="top-wrapper-2">
     <div class="content-wrapper pad-13">
        <!-- header 2 -->
        <?php pageclock(); ?>
        <?php page_menu_header_powerproduction( 4 ); ?>
-	   <?php weather_info(); ?>
+       <?php weather_info(); ?>
     </div>
 </div>
 
@@ -497,12 +494,12 @@ $(function() {
     </div> 
     <div class="mid-content-2 pad-13">
     <!-- links -->
-    	<div class="frame-2-top">
-    		<span class="text-2">opgewekte kWh jaren</span>
-    	</div>
-    	<div class="frame-2-bot"> 
-    	<div id="KwhChart" style="width:100%; height:480px;"></div>	
-    	</div>
+        <div class="frame-2-top">
+            <span class="text-2">opgewekte kWh jaren</span>
+        </div>
+        <div class="frame-2-bot"> 
+        <div id="KwhChart" style="width:100%; height:480px;"></div>    
+        </div>
 </div>
 </div>
 <div id="loading-data"><img src="./img/ajax-loader.gif" alt="Even geduld aub." height="15" width="128" /></div>   
