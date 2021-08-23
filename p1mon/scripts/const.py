@@ -22,14 +22,15 @@
 # versie 202012-1.0.0 Versie met support voor S0 puls kWh meting.
 # Versie 1.1.0 Watermeter kan nu ook minuut waarden verwerken. 
 # Versie 1.2.0 log file viewer toegevoegd.
+# Versie 1.3.0 Tweede powerproduction voor solar toegevoegd.
 
 ###########################################
 # onderstaande drie versie constanten bij #
 # elke release aanpassen                  #
 ###########################################
-P1_VERSIE                       = "1.2.0"       # semantische versie nummers.
+P1_VERSIE                       = "1.3.1"       # semantische versie nummers.
 P1_PATCH_LEVEL                  = "0"           # standaard op 0, wordt verhoogd als op een image een patch wordt uigevoerd.
-P1_SERIAL_VERSION               = "20210303"    # moet altijd gewijzigd worden bij een nieuwe versie
+P1_SERIAL_VERSION               = "20210618"    # moet altijd gewijzigd worden bij een nieuwe versie
 
 
 #CRYPTO_SEED                     ="bee31cd96a3ce221"
@@ -45,8 +46,8 @@ ZTATZ_P1_VERSION_DOWNLOAD_URL   ='DOWNLOAD_URL'
 ZTATZ_P1_SERIAL_VERSION         ='SERIAL_VERSION'
 API_BASIC_JSON_PREFIX           ='basic.'
 API_BASIC_JSON_SUFFIX           ='.json'
-API_BASIC_VERSION               =6
-UDP_BASIC_API_PORT              =40721
+API_BASIC_VERSION               = 6
+UDP_BASIC_API_PORT              = 40721
 P1_UPGRADE_ASSIST               ="P1UPGRADEASSIST"
 SYSTEM_ID_DEFAULT               ="0000-0000-0000-0000-0000"
 DBX_DIR_BACKUP                  ="/backup"
@@ -89,6 +90,7 @@ DB_WEATHER_MAAND_TAB            ="weer_history_maand"
 DB_WEATHER_JAAR_TAB             ="weer_history_jaar"
 DB_TEMPERATUUR_TAB              ="temperatuur"
 DB_POWERPRODUCTION_TAB          ="powerproduction"
+DB_POWERPRODUCTION_SOLAR_TAB    ="powerproduction_solar" # 1.3.0
 DIR_EXPORT                      ="/p1mon/export/"
 DIR_FILEDISK                    ="/p1mon/data/"
 #DIR_FILELOG                     ="/p1mon/var/log/"
@@ -128,6 +130,7 @@ FILE_ETH0MAC                    ="/p1mon/mnt/ramdisk/eth0mac.txt"
 FILE_DB_WEER_FILENAME           ="/p1mon/mnt/ramdisk/weer.db"
 FILE_MQTT_TOPICS                ="/p1mon/mnt/ramdisk/mqtt_topics.json"
 #FILE_DB_WEER_HISTORIE_FILENAME  ="/p1mon/mnt/ramdisk/weer_historie.db"
+FILE_DUCKDNS_STATUS             = "/p1mon/mnt/ramdisk/duckdns.status"
 FILE_DB_TEMPERATUUR_FILENAME    ="/p1mon/mnt/ramdisk/02_temperatuur.db"
 FILE_SESSION                    ="/p1mon/mnt/ramdisk/session.txt"
 FILE_PREFIX_CUSTOM_UI           ="/p1mon/var/tmp/custom-www-export-"
@@ -150,5 +153,7 @@ FILESHARE_MODE_UIT              ="uit"
 FILESHARE_MODE_DATA             ="data"
 FILESHARE_MODE_DEV              ="dev"
 P1MSG_BUF_SIZE                  ="120"
-NOT_SET                         =999999999999
+NOT_SET                         = 999999999999
 
+######################### NO-IP config ##################
+NO_IP_CONFIG_FILE               = '/p1mon/etc/no-ip2.conf'

@@ -42,9 +42,11 @@ prgname = 'P1Watchdog'
 rt_status_db            = rtStatusDb()
 config_db               = configDB()
 p1_no_data_notification = False
-next_version_timestamp  = 0     # hen this value is < than utc do retry fetch remote version data.
+next_version_timestamp  = 0 # if this value is < than utc do retry fetch remote version data.
+next_duckdns_timestamp  = 0 # if this value is < than utc do retry to do an DuckDns update.
 auto_import_is_active   = False # used as flag to see if import is running
 msg_import_busy         = "SQL import loopt"
+
 
 def DiskRestore():
     if not util.fileExist(const.FILE_SESSION):
@@ -246,6 +248,15 @@ def MainProg():
             checkMQTTRun()
             ## P1MQTT run or stop
             checkP1SqlImportRun()
+            ## P1SolarSetup / Runtime P1SolarEdge different tasks
+            #flog.setLevel( logging.DEBUG )
+            P1SolarSetup()
+            P1SolarResetConfig()
+            P1SolarReloadAllData()
+            P1SolarReader()
+            P1SolarFactoryReset()
+            #flog.setLevel( logging.INFO )
+            DuckDNS()
 
 
         # elke 60 sec acties
@@ -293,7 +304,7 @@ def MainProg():
         if cnt%1800 == 0:
             ## Internet IP adres
             rt_status_db.strset(getPublicIpAddress(),26,flog)
-            ## DNS naamv van publieke adres
+            ## DNS naam van publieke adres
             rt_status_db.strset(getHostname(getPublicIpAddress()),27,flog)
             ## is het Internet bereikbaar
             if getInternetStatusByDnsServers():
@@ -303,10 +314,12 @@ def MainProg():
                 rt_status_db.strset("nee",24,flog)
                 flog.error(inspect.stack()[0][3]+": geen Internet verbinding.")  
 
+
+
         cnt+=1
         if cnt > 1800:
             cnt=1
-        time.sleep(2) #niet aanpassen
+        time.sleep(2) #DO NOT CHANGE!
 
 
 # processing #####################
@@ -400,7 +413,6 @@ def checkAutoImport():
     
     #flog.setLevel( logging.INFO )
 
-
 ########################################################
 # checks if the Sql database script must run or must   #
 # run                                                  #
@@ -437,6 +449,195 @@ def checkP1SqlImportRun():
 
     #flog.setLevel( logging.INFO )
 
+########################################################
+# Update de DuckDNS entry for the FQDN and your public #
+# IP adres                                             #
+########################################################
+def DuckDNS():
+    #flog.setLevel( logging.DEBUG )
+    global next_duckdns_timestamp 
+    #print ( next_duckdns_timestamp  )
+
+    try:
+        prg_name = "P1DuckDns.py" 
+
+        _id, run_status, _label = config_db.strget( 152, flog )
+        _id, force_run,  _label = config_db.strget( 153, flog )
+
+        if int( run_status ) == 1 or int( force_run ) == 1 : # start process
+
+            if int( force_run ) == 1:
+                next_duckdns_timestamp = 0     # else the force won't run if the timeout is set.
+                config_db.strset( 0, 153, flog ) # reset the forced update.
+                flog.info( inspect.stack()[0][3] + ": geforceerd gestart." )
+
+            if next_duckdns_timestamp > util.getUtcTime():
+                flog.debug( inspect.stack()[0][3] +" laatste update is minder dan zes uur geleden uitgevoerd, geen update uitgevoerd." )
+                return
+
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " gestart." )
+            if os.system('/p1mon/scripts/' + prg_name + ' --update 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " gefaald." )
+            else:
+                 next_duckdns_timestamp = util.getUtcTime() + 21600 # update after 6 hour
+
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+        config_db.strset(0, 153, flog) # fail save to stop
+    
+    #flog.setLevel( logging.INFO )
+
+########################################################
+# Start the Solar Edge reader process to get periodic  #
+# data from the api                                    #
+########################################################
+def P1SolarReader():
+    #flog.setLevel( logging.DEBUG )
+    try:
+        prg_name = "P1SolarEdgeReader.py" 
+       
+        _id, run_status, _label = config_db.strget( 141, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug( inspect.stack()[0][3] + ": " + prg_name + " run status is = " + str( run_status ) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) == 1 and len( pid_list) == 0: # start process
+
+            #config_db.strset(0, 142, flog)
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " gestart." )
+            if os.system('/p1mon/scripts/' + prg_name + ' 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " gefaald." )
+            
+        if int(run_status) == 0 and len(pid_list) > 0: # stop process.
+            flog.info(inspect.stack()[0][3] + ": " + prg_name + " wordt gestopt." )
+            for pid in pid_list:
+                flog.info(inspect.stack()[0][3] + ": pid = " + str(pid) + " wordt gestopt. ")
+                os.kill( pid, signal.SIGINT ) # do a nice stop
+
+
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+        config_db.strset(0, 141, flog) # fail save to stop
+    
+    #flog.setLevel( logging.INFO )
+
+########################################################
+# reset to factory settings. Delete config and all)    #
+# database data.                                       #
+########################################################
+def P1SolarFactoryReset():
+    #flog.setLevel( logging.DEBUG )
+    try:
+        prg_name = "P1SolarEdgeSetup.py" 
+       
+        _id, run_status, _label = config_db.strget( 149, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug( inspect.stack()[0][3] + ": " + prg_name + " run status is = " + str( run_status ) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) == 1 and len( pid_list) == 0: # start process
+
+            config_db.strset(0, 149, flog)
+
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " --genesis gestart." )
+            if os.system('/p1mon/scripts/' + prg_name + ' --genesis 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " --genesis gefaald." )
+            
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+        config_db.strset(0, 149, flog) # fail save to stop
+    
+    #flog.setLevel( logging.INFO )
+
+
+########################################################
+# reload the sqlite database with all the data the     #
+# API can deliver                                      #
+########################################################
+def P1SolarReloadAllData():
+    #flog.setLevel( logging.DEBUG )
+    try:
+        prg_name = "P1SolarEdgeSetup.py" 
+       
+        _id, run_status, _label = config_db.strget( 142, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug( inspect.stack()[0][3] + ": " + prg_name + " run status is = " + str( run_status ) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) == 1 and len( pid_list) == 0: # start process
+
+            config_db.strset(0, 142, flog)
+
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " --reloadsites gestart." )
+            if os.system('/p1mon/scripts/' + prg_name + ' --reloadsites 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " --reloadsites gefaald." )
+            
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+        config_db.strset(0, 142, flog) # fail save to stop
+    
+    #flog.setLevel( logging.INFO )
+
+########################################################
+# re-reads the sites from the API                      #
+########################################################
+def P1SolarResetConfig():
+    #flog.setLevel( logging.DEBUG )
+    try:
+        prg_name = "P1SolarEdgeSetup.py" 
+       
+        _id, run_status, _label = config_db.strget( 145, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug( inspect.stack()[0][3] + ": " + prg_name + " run status is = " + str( run_status ) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) == 1 and len( pid_list) == 0: # start process
+
+            config_db.strset(0, 145, flog)
+
+            if os.system('/p1mon/scripts/' + prg_name + ' --removesites 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " --removesites gefaald." )
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " --removesites gereed." )
+
+            if os.system('/p1mon/scripts/' + prg_name + ' --savesites 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " --savesites gefaald." )
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " --savesites gereed." )
+
+
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+        config_db.strset(0, 145, flog) # fail save to stop
+    
+    #flog.setLevel( logging.INFO )
+
+########################################################
+# loads the solaredge config and deletes records from  #
+# the database                                         #
+########################################################
+def P1SolarSetup():
+
+    #flog.setLevel( logging.DEBUG )
+    try:
+        prg_name = "P1SolarEdgeSetup.py" 
+       
+        _id, run_status, _label = config_db.strget( 144, flog )
+        pid_list, _process_list = listOfPidByName( prg_name )
+        flog.debug( inspect.stack()[0][3] + ": " + prg_name + " run status is = " + str( run_status ) + " aantal gevonden PID = " + str(len(pid_list) ) )
+
+        if int(run_status) == 1 and len( pid_list) == 0: # start process
+
+            config_db.strset(0, 144, flog)
+
+            if os.system('/p1mon/scripts/' + prg_name + ' --savesites 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " --savesites gefaald." )
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " --savesites gereed." )
+
+            if os.system('/p1mon/scripts/' + prg_name + ' --deletedb 2>&1 >/dev/null &') > 0:
+                flog.error( inspect.stack()[0][3] + prg_name + " --deletedb gefaald." )
+            flog.info( inspect.stack()[0][3] + ": " + prg_name + " --deletedb gereed." )
+
+
+    except Exception as e:
+        flog.error( inspect.stack()[0][3] + ": gefaald " + str(e) )
+        config_db.strset(0, 144, flog) # fail save to stop
+    
+    #flog.setLevel( logging.INFO )
 
 ########################################################
 # checks if the MQTT script must run or must be        #
