@@ -23,14 +23,16 @@
 # Versie 1.1.0 Watermeter kan nu ook minuut waarden verwerken. 
 # Versie 1.2.0 log file viewer toegevoegd.
 # Versie 1.3.0 Tweede powerproduction voor solar toegevoegd.
+# Versie 1.4.0 Internet API toegevoegd en 1 sec verwerking.
+# Versie 1.4.1 DNS en Letsencrypt uitbreidingen. QR code voor API's toegevoegd.
 
 ###########################################
 # onderstaande drie versie constanten bij #
 # elke release aanpassen                  #
 ###########################################
-P1_VERSIE                       = "1.3.1"       # semantische versie nummers.
+P1_VERSIE                       = "1.4.1"       # semantische versie nummers.
 P1_PATCH_LEVEL                  = "0"           # standaard op 0, wordt verhoogd als op een image een patch wordt uigevoerd.
-P1_SERIAL_VERSION               = "20210618"    # moet altijd gewijzigd worden bij een nieuwe versie
+P1_SERIAL_VERSION               = "20211002"    # moet altijd gewijzigd worden bij een nieuwe versie
 
 
 #CRYPTO_SEED                     ="bee31cd96a3ce221"
@@ -46,7 +48,7 @@ ZTATZ_P1_VERSION_DOWNLOAD_URL   ='DOWNLOAD_URL'
 ZTATZ_P1_SERIAL_VERSION         ='SERIAL_VERSION'
 API_BASIC_JSON_PREFIX           ='basic.'
 API_BASIC_JSON_SUFFIX           ='.json'
-API_BASIC_VERSION               = 6
+API_BASIC_VERSION               = 7 # updated in version > 1.4.0
 UDP_BASIC_API_PORT              = 40721
 P1_UPGRADE_ASSIST               ="P1UPGRADEASSIST"
 SYSTEM_ID_DEFAULT               ="0000-0000-0000-0000-0000"
@@ -96,6 +98,7 @@ DIR_FILEDISK                    ="/p1mon/data/"
 #DIR_FILELOG                     ="/p1mon/var/log/"
 DIR_FILELOG                     ="/var/log/p1monitor/"
 DIR_FILESEMAPHORE               ="/p1mon/mnt/ramdisk/"
+DIR_NGINX_BASE                  ="/etc/nginx"
 DIR_RAMDISK                     ="/p1mon/mnt/ramdisk/"
 DIR_DBX_LOCAL                   ="/p1mon/mnt/ramdisk/dbx" # geen / toevoegen
 DIR_VAR                         ="/p1mon/var/"
@@ -107,8 +110,10 @@ DIR_UPGRADE_ASSIST_USB_MOUNT    ='/p1mon/mnt/usb'
 #DIR_TMP                         ="/p1mon/var/tmp/"
 DIR_DOWNLOAD                    ="/p1mon/www/download/"
 DIR_WWW_CUSTOM                  ="/p1mon/www/custom"
+DIR_WWW                         ='/p1mon/www'
 EXPORT_PREFIX                   ="p1mon-sql-export"
 IMPORT_PREFIX                   ="p1mon-sql-import"
+FILE_DBX_AUTH_REDIRECT          ="dbx_auth_redirect.txt"
 
 FILE_DB_POWERPRODUCTION         ="/p1mon/mnt/ramdisk/05_powerproduction.db"
 #FILE_DB_POWERPRODUCTION_TMP     ="/p1mon/mnt/ramdisk/06_powerproduction_tmp.db"

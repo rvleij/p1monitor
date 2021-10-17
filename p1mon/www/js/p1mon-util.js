@@ -1,3 +1,18 @@
+
+// read CSS selector and style from loaded pages
+function getStyleRuleValue( selector, style ) {
+    for (var i = 0; i < document.styleSheets.length; i++) {
+        var mysheet = document.styleSheets[i];
+        var myrules = mysheet.cssRules ? mysheet.cssRules : mysheet.rules;
+        for (var j = 0; j < myrules.length; j++) {
+            if (myrules[j].selectorText && myrules[j].selectorText.toLowerCase() === selector) {
+                return myrules[j].style[style];
+            }
+        }
+    }
+};
+
+
 // set the highchart language options.
 function setHighChartLanguageOptions( idx ) {
     
@@ -201,3 +216,21 @@ function centerPosition(element_id) {
     });
     $(window).resize();
 }
+
+function getTimestamp() {
+    const pad = (n,s=2) => (`${new Array(s).fill(0)}${n}`).slice(-s);
+    const d = new Date();
+    return `${pad(d.getFullYear(),4)}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+  function getRandomHex( size, offset ) {
+    let result = [];
+    let hexRef = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+    let currentTime = new Date();
+    seed = currentTime.getTime() + offset
+    for (let n = 0; n < size; n++) {
+      result.push(hexRef[Math.floor( Math.random( seed ) * 16)]);
+    }
+    return result.join('');
+  }
+  

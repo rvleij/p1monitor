@@ -12,7 +12,7 @@ from datetime import datetime
 from logger import fileLogger,logging
 from sqldb import temperatureDB,configDB,rtStatusDb
 from time import time,sleep
-from util import fileExist,setFile2user,fileChanged,getUtcTime
+from util import fileExist,setFile2user,getUtcTime
 
 # programme name.
 prgname = 'P1UdpDaemon'
@@ -102,7 +102,7 @@ def Main(argv):
             # process json
             try:
               
-                print ( data )
+                #print ( data )
                 
                 jsondata = json.loads( data[0].decode('utf-8') )
 
