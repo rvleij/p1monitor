@@ -3,6 +3,9 @@
 echo "Starting cron for timed backups"
 cron
 
+echo "Starting SOCAT"
+/usr/bin/python3 /usr/local/bin/socat_loop.py &
+
 echo "Fake /dev/sda1"
 touch /dev/sda1
 

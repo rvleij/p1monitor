@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:buster-slim
 
 # Add p1mon and www-data with correct UID/GID
 RUN addgroup --gid 1004 p1mon;addgroup -gid 997 gpio;useradd --gid 1004 --uid 1001 --create-home --password '$6$YrKO7PGalxElg00B$DhGh02AJO4gst7rA5YENOd5Y8zp/ksqvWnTzv2gZtq0C2GeuGPaI7Y7CW8NXS0N63LI3YlJPEl4/FZToYKnpS1' --groups dialout,sudo,www-data,gpio p1mon;adduser www-data p1mon
@@ -7,7 +7,7 @@ RUN addgroup --gid 1004 p1mon;addgroup -gid 997 gpio;useradd --gid 1004 --uid 10
 RUN ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime;dpkg-reconfigure -f noninteractive tzdata
 
 # Install packages
-RUN apt update;apt upgrade -y;apt install -y procps python3-venv python3-pip nginx-full php-fpm sqlite3 php-sqlite3 python3-cairo python-apt nano cron git logrotate libsodium-dev libffi-dev
+RUN apt update;apt upgrade -y;apt install -y procps python3-venv python3-pip nginx-full php-fpm sqlite3 php-sqlite3 python3-cairo python3-apt nano cron git logrotate libsodium-dev libffi-dev iputils-ping socat iw
 
 # Install sudo with RUNLEVEL env var to prevent complaints...
 RUN rm /etc/sudoers;RUNLEVEL=1 apt install -y sudo
@@ -28,11 +28,16 @@ RUN rm /etc/cron.daily/apt-compat /etc/cron.daily/dpkg /etc/cron.daily/exim4-bas
 # Replace commands and scripts:
 RUN mv /p1mon/scripts/p1monExec /p1mon/scripts/p1monExec-orig;cp -a /opt/p1mon-mods/* /;chown -R p1mon:p1mon /p1mon;chown -R www-data:www-data /var/lib/nginx;chmod +s /bin/ping
 
+# Install Docker scripts and socat loop
+RUN cp -a /opt/docker-mods/socat_loop.py /usr/local/bin;chmod +x /usr/local/bin/socat_loop.py
+
 # Install missing python packages
 USER p1mon
 RUN pip3 install gunicorn
 
 USER root
+
+HEALTHCHECK CMD curl -f http://127.0.0.1/nginx_status/ || exit 1
 
 CMD [ "/start_all.sh" ]
 
