@@ -16,14 +16,30 @@ I built the container image based on this work and published it here so others c
 ## Running
 I run the container using the following run command:
 
-    docker run -d -p 80:80 -p 10721:10721 -p 40721:40721 --name="p1mon" \
-    -h p1mon --cap-add=SYS_NICE \
-    --tmpfs /tmp --tmpfs /run -v /<insert local path>/p1mon/ramdisk:/p1mon/mnt/ramdisk:rw \
-    -v /<insert local path>/p1mon/data:/p1mon/data:rw -v /<insert local path>/p1mon/usbdisk:/p1mon/mnt/usb:rw \
-    -v /etc/localtime:/etc/localtime:ro \
-    --device=/dev/<your USB device> \
-    --restart=unless-stopped \
-    rvleij/p1monitor
+```
+version: '3'
+services:
+    p1mon:
+        hostname: p1mon
+        restart: unless-stopped
+        image: 'rvleij/p1monitor'
+        cap_add:
+            - SYS_NICE
+        ports:
+            - '80:80'
+            - '10721:10721'
+            - '40721:40721'
+        devices:
+            - "/dev/ttyUSB0:/dev/ttyUSB0"
+        volumes:
+            - "/etc/localtime:/etc/localtime:ro"
+            - "./data:/p1mon/data"
+            - "./usbdisk:/p1mon/mnt/usb"
+            - "./ramdisk:/p1mon/mnt/ramdisk"
+        tmpfs:
+            - /run
+            - /tmp
+```
 
 ## Updating
 1. Create the memory dump to /usbstick (mounted seperately) by running the Upgrade Assistant from within P1 Monitor
